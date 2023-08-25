@@ -10,7 +10,7 @@ spec:
   selector:
     matchLabels:
       app: python-app
-  replicas: 1
+  replicas: 3
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -52,7 +52,7 @@ spec:
           periodSeconds: 10
         ports:
         - containerPort: 5000
-          name: HTTP
+          name: http
       restartPolicy: Always
 ---
 kind: Service
@@ -71,6 +71,8 @@ kind: Ingress
 metadata:
   name: python-app-ingress
   namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 spec:
   rules:
     - http:
