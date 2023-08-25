@@ -9,7 +9,18 @@
 minikube start
 minikube addons enable ingress
 ```
+###### Output
+>lmasu@b0be836ea5ba ~ % minikube start
+> ...
+> 🏄  Done! kubectl is now configured to use "minikube" cluster and "default" namespace by default
+> minikube addons enable ingress
+> ...
+> 🌟  The 'ingress' addon is enabled
 ## Prepare app image
+```bash
+mkdir -p python-app
+cd python-app
+```
 #### Create source code
 ```bash
 cat > app.py <<EOF
@@ -36,12 +47,42 @@ uWSGI==2.0.21
 EOF
 
 ```
+### Create Dockerfile
+```bash
+cat > Dockerfile <<EOF
+FROM  python:slim-bookworm
+WORKDIR /app
+
+COPY ./app.py  .
+COPY requirements.txt .
+
+RUN apt-get update --no-install-recommends && \
+    apt-get install --no-install-recommends -y gcc && \
+    pip install --no-cache-dir -r requirements.txt && \
+    chown nobody . -R
+
+USER nobody
+EXPOSE 5000
+ENTRYPOINT uwsgi --http 0.0.0.0:5000 --wsgi-file app.py --callable app
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/healthz || exit 1
+EOF
+```
 #### Build image
 ```bash
 minikube image build -t python-app:v1 .
 ```
+###### Output
+> ...
+> #9 DONE 21.7s
+> #10 exporting to image
+> #10 exporting layers
+> #10 exporting layers 0.4s done
+> #10 writing image sha256:49f3af263f43526f8e702e358f37b582fbc42ca7f2395db1abd7b19d72f42935 done
+> #10 naming to docker.io/library/python-app:v1 done
+> #10 DONE 0.4s
 ## Deploy app
-##### Create deployment
+#### Create deployment
 ```bash
 export IMAGE=python-app:v1
 export APP_NAME=python-app
@@ -104,10 +145,10 @@ spec:
       restartPolicy: Always
 EOF
 ```
-> Output:
+###### Output
 > deployment.apps/python-app created
 
-##### Create service
+#### Create service
 ```bash
 cat <<EOF | envsubst | minikube kubectl -- apply -f -
 kind: Service
@@ -123,7 +164,10 @@ spec:
       targetPort: 5000
 EOF
 ```
-##### Create ingress
+###### Output
+> service/python-app-service created
+
+#### Create ingress
 ```bash
 cat <<EOF | envsubst | minikube kubectl -- apply -f -
 apiVersion: networking.k8s.io/v1
@@ -146,11 +190,20 @@ spec:
                   number: 80
 EOF
 ```
+###### Output
+> ingress.networking.k8s.io/python-app-ingress created
+#### Verify deployment
 ```bash 
 minikube kubectl -- get pods -n default
 ```
+###### Output
+| NAME | READY | STATUS | RESTARTS | AGE |
+|------|-------|--------|----------|-----|
+| python-app-xxxxx-xxxx | 1/1 | Running | 0 | 3m24s |
+| python-app-xxxxx-xxxx | 1/1 | Running | 0 | 3m24s |
+| python-app-xxxxx-xxxx | 1/1 | Running | 0 | 3m24s |
 
-##  Access the app
+## Access the app
 ```bash
 minikube tunnel
 ```
@@ -160,7 +213,3 @@ minikube tunnel
 ```bash
 minikube delete --all
 ```
-
-# Reference:
-- https://devopscube.com/minikube-mac/
-- https://minikube.sigs.k8s.io/docs/drivers/qemu/
