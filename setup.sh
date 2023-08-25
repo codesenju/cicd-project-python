@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-
 export IMAGE=python-app:v1
 export APP_NAME=python-app
 
@@ -50,28 +49,9 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 EOF
 echo Created a Dockerfile for the python app
 
-# Get current image SHA of deployment
-CURRENT_IMAGE_SHA=$(kubectl get deployment ${APP_NAME} -o jsonpath="{.spec.template.spec.containers[0].image}") || true
-
 # Build image
 echo Building image...
-docker build -t ${IMAGE} .
-
-# Get new image SHA
-NEW_IMAGE_SHA=$(docker image inspect ${IMAGE} --format='{{.Id}}')
-
-
-# Compare current and new image SHA and perform rollout restart if different
-if [ "$CURRENT_IMAGE_SHA" != "$NEW_IMAGE_SHA" ]; then
-  echo "Image SHA has changed, performing rollout restart"
-  minikube kubectl -- rollout restart deployment/${APP_NAME}
-  exit 0
-else
-  echo "Image SHA has not changed, skipping rollout restart"
-  echo "Loading image to minikube..."
-  minikube image load ${APP_NAME}
-echo "Image successfully loaded"
-fi
+minikube image build -t python-app:v1 .
 
 # Create deployment
 cat <<EOF | envsubst | minikube kubectl -- apply -f -
@@ -170,5 +150,10 @@ spec:
                   number: 80
 EOF
 
+minikube kubectl -- rollout restart deployment ${APP_NAME} -n default
+sleep 5
 # Verify deployment
+echo  Verify deployment
 minikube kubectl -- get pods -n default
+sleep 2
+echo Done!
