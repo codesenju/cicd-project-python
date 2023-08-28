@@ -43,7 +43,7 @@ EOF
 ```bash
 cat > requirements.txt <<EOF
 Flask==2.2.5
-uWSGI==2.0.21
+gunicorn==21.2.0
 EOF
 
 ```
@@ -62,10 +62,9 @@ RUN apt-get update --no-install-recommends && \
     chown nobody . -R
 
 USER nobody
-EXPOSE 5000
-ENTRYPOINT uwsgi --http 0.0.0.0:5000 --wsgi-file app.py --callable app
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5000/healthz || exit 1
+EXPOSE 8000
+ENTRYPOINT  gunicorn -w 4 app:app
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD curl -f http://localhost:8000/healthz || exit 1
 EOF
 ```
 #### Build image
