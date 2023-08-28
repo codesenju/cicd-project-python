@@ -139,7 +139,7 @@ spec:
           failureThreshold: 3
           periodSeconds: 10
         ports:
-        - containerPort: 5000
+        - containerPort: 8000
           name: http
       restartPolicy: Always
 EOF
@@ -160,7 +160,7 @@ spec:
     app: ${APP_NAME}
   ports:
     - port: 80
-      targetPort: 5000
+      targetPort: 8000
 EOF
 ```
 ###### Output
