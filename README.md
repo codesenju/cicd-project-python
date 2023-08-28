@@ -123,7 +123,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /healthz
-            port: 5000
+            port: 8000
           initialDelaySeconds: 5
           timeoutSeconds: 2
           successThreshold: 1
@@ -132,7 +132,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /healthz
-            port: 5000
+            port: 8000
           initialDelaySeconds: 5
           timeoutSeconds: 2
           successThreshold: 1
