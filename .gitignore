@@ -22,7 +22,6 @@ env/
 .vscode/
 *.sublime-project
 *.sublime-workspace
-
 # Logs and databases
 *.log
 *.sqlite3
@@ -33,4 +32,3 @@ Thumbs.db
 
 .venv/
 .DS_Store
- 

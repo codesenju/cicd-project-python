@@ -220,3 +220,25 @@ minikube tunnel
 ```bash
 minikube delete --all
 ```
+
+# Other
+
+## Security
+### Unit Tests
+```bash
+pytest
+```
+### Vulnerability scanning
+```bash
+bandit web.py
+```
+
+```bash
+safety check -r requirements.txt
+```
+## How to make pytest discover the unittests
+>Check the directory structure: Make sure that your tests are located in a subdirectory of your project’s root directory, and that the subdirectory is named tests.
+
+> Check the test file names: By default, pytest will only discover test files that match the pattern test_*.py or *_test.py2. Make sure that your test files follow this naming convention.
+
+> Check for import errors: If there are any import errors in your test files, pytest may fail to discover the tests. You can use the pytest --collect-only command to verify that your test suite can be executed3.
