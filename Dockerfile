@@ -1,7 +1,7 @@
 FROM  python:slim-bookworm
 WORKDIR /app
 
-COPY ./app.py  .
+COPY ./web.py  .
 COPY requirements.txt .
 
 RUN apt-get update --no-install-recommends && \
@@ -11,5 +11,5 @@ RUN apt-get update --no-install-recommends && \
 
 USER nobody
 EXPOSE 8000
-ENTRYPOINT  gunicorn -w 4 -b 0.0.0.0:8000 app:app
+ENTRYPOINT  gunicorn -w 4 -b 0.0.0.0:8000 web:app
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD curl -f http://localhost:8000/healthz || exit 1
