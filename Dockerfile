@@ -6,7 +6,7 @@ COPY requirements.txt .
 
 RUN apt-get update --no-install-recommends && \
     apt-get install --no-install-recommends -y gcc && \
-    pip install --no-cache-dir -r requirements.txt  && \
+    pip install --no-cache-dir -r requirements.txt && \
     chown nobody . -R
 
 USER nobody
