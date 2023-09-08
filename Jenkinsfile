@@ -1,21 +1,25 @@
 pipeline {
     agent {label 'k8s-agent'}
-    environment {
-        IMAGE='codesenju/cicd-project-python'
-    }
-    stages {
-        stage('Build Docker Image') {
+    
+   stages {
+        stage('Checkout') {
             steps {
-                sh 'docker build -t $IMAGE:$BUILD_NUMBER .'
+                withCredentials([string(credentialsId: 'github_token', variable: 'GITHUB_TOKEN')]) {
+                    sh 'git clone --branch main --depth 1 --single-branch --no-tags --quiet https://$GITHUB_TOKEN@github.com/codesenju/cicd-project-python.git'
+                }
             }
         }
-        
-        stage('Publish to Dockerhub') {
+        stage('Build and Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                    sh 'docker login -u $USERNAME -p $PASSWORD'
-                    sh 'docker push $IMAGE:$BUILD_NUMBER'
+            dir('cicd-project-python') {
+                script {
+                  docker.withRegistry('https://registry.hub.docker.com', 'dockerhub') {
+                    def customImage = docker.build("codesenju/test-python:${env.BUILD_NUMBER}")
+                      /* Push the container to the custom Registry */
+                       customImage.push()
+                  }
                 }
+            }
             }
         }
     }
