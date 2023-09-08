@@ -242,3 +242,21 @@ safety check -r requirements.txt
 > Check the test file names: By default, pytest will only discover test files that match the pattern test_*.py or *_test.py2. Make sure that your test files follow this naming convention.
 
 > Check for import errors: If there are any import errors in your test files, pytest may fail to discover the tests. You can use the pytest --collect-only command to verify that your test suite can be executed3.
+
+# More
+```bash
+To automatically trigger the pipeline on a commit to the main branch, you can use a webhook in your version control system (in this case, GitHub). Here are the steps to set it up:
+
+1. Go to your GitHub repository.
+2. Click on the "Settings" tab.
+3. In the left sidebar, click on "Webhooks".
+4. Click on the "Add webhook" button.
+5. In the "Payload URL" field, enter the URL of your pipeline's trigger endpoint. This URL will depend on your CI/CD tool. Make sure it is accessible from the internet.
+6. Select the events that should trigger the pipeline. In this case, you can select the "Push" event.
+7. Make sure the "Active" checkbox is checked.
+8. Click on the "Add webhook" button to save the webhook.
+
+Now, whenever a commit is pushed to the main branch of your repository, the webhook will be triggered, and it will automatically trigger your pipeline.
+
+Note: Make sure you have the necessary permissions and credentials set up in your CI/CD tool to access your repository and perform the required actions.
+```
