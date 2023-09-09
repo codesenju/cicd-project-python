@@ -3,7 +3,7 @@
 //env.DOCKERHUB_CREDENTIAL_ID = 'dockerhub'
 //env.GITHUB_REPO = 'cicd-project-python'
 //env.GITHUB_USERNAME = 'codesenju' 
-
+// test
 pipeline {
     agent {label 'k8s-agent'}
     environment {
