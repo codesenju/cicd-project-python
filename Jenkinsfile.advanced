@@ -11,7 +11,10 @@ pipeline {
     GITHUB_REPO = 'cicd-project-python'
     GITHUB_USERNAME = 'codesenju'
   }
-
+ triggers {
+        // Trigger the pipeline upon pushing changes to the main branch
+    githubPush()
+    }
     stages {
     /* Skip Install stage
         stage("Install"){
