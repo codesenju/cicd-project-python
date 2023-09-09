@@ -5,6 +5,11 @@ env.DOCKERHUB_CREDENTIAL_ID = 'dockerhub'
 //env.GITHUB_USERNAME = 'codesenju'
 
 pipeline {
+    
+      triggers {
+    githubPush()
+  }
+  
     agent {label 'k8s-agent'}
     environment {
     GITHUB_TOKEN = credentials('github_token')
