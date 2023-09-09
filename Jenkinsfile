@@ -2,7 +2,7 @@ env.IMAGE = 'codesenju/python-test'
 // env.GITHUB_TOKEN_ID = 'github_token'
 env.DOCKERHUB_CREDENTIAL_ID = 'dockerhub'
 //env.GITHUB_REPO = 'cicd-project-python'
-//env.GITHUB_USERNAME = 'codesenju'
+//env.GITHUB_USERNAME = 'codesenju' 
 
 pipeline {
     agent {label 'k8s-agent'}
