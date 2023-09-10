@@ -1,4 +1,4 @@
-# Operability Take Home Exercise - L. Masubelele
+# CICD Project | Python
 
 # Prerequisites:
 - docker
