@@ -1,8 +1,11 @@
 env.IMAGE = 'codesenju/python-test'
-// env.GITHUB_TOKEN_ID = 'github_token'
+/* Docker */
 env.DOCKERHUB_CREDENTIAL_ID = 'dockerhub'
-//env.GITHUB_REPO = 'cicd-project-python'
-//env.GITHUB_USERNAME = 'codesenju'
+/* Github  */
+env.GITHUB_CRDENTIAL_ID = 'git-ssh-pvt'
+env.GITHUB_REPO = 'cicd-project-python'
+env.GITHUB_USERNAME = 'codesenju'
+env.APP_NAME = 'cicd-project-python'
 
 pipeline {
     
@@ -11,12 +14,12 @@ pipeline {
   }
   
     agent {label 'k8s-agent'}
-    environment {
-    GITHUB_TOKEN = credentials('github_token')
-    GITHUB_REPO = 'cicd-project-python'
-    GITHUB_USERNAME = 'codesenju'
-  }
+    
+    //environment {
+        /* Set environment variables */
 
+    //}
+    
     stages {
     /* Skip Install stage
         stage("Install"){
@@ -49,14 +52,15 @@ stage('Checkout') {
                     extensions: [],
                     submoduleCfg: [],
                     userRemoteConfigs: [[
-                        url: "https://$GITHUB_TOKEN@github.com/${GITHUB_USERNAME}/${GITHUB_REPO}.git"
+                        credentialsId: "${GITHUB_CRDENTIAL_ID}",
+                        url: "git@github.com:${GITHUB_USERNAME}/${GITHUB_REPO}.git"
                     ]]
                 ])
            //}
        }
     }
-}
-
+} 
+        /*
         stage('Approval') {
             steps {
                 script {
@@ -70,6 +74,7 @@ stage('Checkout') {
                 }
             }
         }
+        */
         stage('Build and Push Docker Image') {
             steps {
                     script {
@@ -94,8 +99,17 @@ stage('Checkout') {
                             /* Push the container to the custom Registry */
                             customImage.push()
                         }
+                        // Create Artifacts which we can use if we want to continue our pipeline for other stages 
+                        sh '''
+                             printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${IMAGE}" "${BUILD_NUMBER}" > build.json
+                        '''
                     }
                 
+            }
+        }
+         stage('Archive Artifacts') {
+            steps {
+                archiveArtifacts artifacts: 'build.json', fingerprint: true
             }
         }
     }
