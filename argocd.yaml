@@ -16,7 +16,7 @@ spec:
     targetRevision: main
     path: k8a/${ENV}
   destination:
-    name: ${CLUSTER_NAME}
+    name: ${ARGOCD_CLUSTER_NAME}
     namespace: ${ENV}
   syncPolicy:
     automated:
