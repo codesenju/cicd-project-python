@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ${APP_NAME}
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    app: ${APP_NAME}
+    cluster: ${ENV}
+    iac: cdk
+spec:
+  project: default
+  source:
+    repoURL: ${SOURCE_REPO_URL_K8S}
+    targetRevision: main
+    path: ${ENV}
+  destination:
+    name: ${ARGOCD_CLUSTER_NAME}
+    namespace: ${ENV}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions: 
+    - CreateNamespace=true
