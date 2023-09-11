@@ -12,11 +12,11 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: ${SOURCE_REPO_URL_K8S}
+    repoURL: git@github.com:${GITHUB_USERNAME}/${K8S_MANIFESTS_REPO}.git
     targetRevision: main
     path: ${ENV}
   destination:
-    name: ${ARGOCD_CLUSTER_NAME}
+    name: ${CLUSTER_NAME}
     namespace: ${ENV}
   syncPolicy:
     automated:
