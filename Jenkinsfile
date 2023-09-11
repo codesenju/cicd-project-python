@@ -6,7 +6,16 @@ env.GITHUB_CRDENTIAL_ID = 'git-ssh-pvt'
 env.GITHUB_REPO = 'cicd-project-python'
 env.GITHUB_USERNAME = 'codesenju'
 env.APP_NAME = 'cicd-project-python'
-
+env.K8S_MANIFESTS_REPO = 'cicd-project-python-k8s'
+/* AWS */
+env.CLUSTER_NAME = 'uat' // Jenkins agent role needs eks:DescribeCluster permissions
+env.AWS_REGION = 'us-east-1'
+// Jenkins agent role needs to be added to the aws-auth role mapping
+/*
+eksctl create iamidentitymapping --cluster $cluster_name \
+       --region=us-east-1 --arn arn:aws:iam::AWS_ACCOUNT_ID:role/ROLE_NAME \
+       --username jenkins-agent-admin --group system:masters --no-duplicate-arns
+ */
 pipeline {
     
       triggers {
@@ -112,5 +121,29 @@ stage('Checkout') {
                 archiveArtifacts artifacts: 'build.json', fingerprint: true
             }
         }
+
+stage('Deploy') {
+    steps {
+        script {
+            sh 'echo Install kustomize cli...'
+            sh 'curl -sLo /tmp/kustomize.tar.gz  https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.0.3/kustomize_v5.0.3_linux_amd64.tar.gz'
+            sh 'tar xzvf /tmp/kustomize.tar.gz -C /usr/bin/ && chmod +x /usr/bin/kustomize && rm -rf /tmp/kustomize.tar.gz'
+            sh 'kustomize version'
+            sh 'echo Install kubectl cli...'
+            sh 'curl -o /usr/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.4/2023-08-16/bin/linux/amd64/kubectl && chmod +x /usr/bin/kubectl'
+            sh 'kubectl version --short --client'
+            sh "echo 'Install Argocd cli & Authenticate with Argocd Server...'"
+            sh 'curl -sLo /usr/bin/argocd https://github.com/argoproj/argo-cd/releases/download/v2.7.2/argocd-linux-amd64 && chmod +x /usr/bin/argocd'
+            sh 'argocd version --client'
+            
+            sh 'aws eks update-kubeconfig --region ${AWS_REGION} --name ${CLUSTER_NAME}'
+            // Set the image in the kustomization file
+            // sh "kustomize edit set image ${env.IMAGE}:${env.BUILD_NUMBER}"
+
+            // Deploy the application
+            sh "kubectl cluster-info"
+        }
+    }
+}
     }
 }
