@@ -72,7 +72,7 @@ metadata:
   name: cicd-project-python-ingress
   namespace: default
   annotations:
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   rules:
     - host: cicd-project-python.lmasu.co.za
