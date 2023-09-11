@@ -1,3 +1,4 @@
+env.ENV = 'dev'
 env.IMAGE = 'codesenju/python-test'
 /* Docker */
 env.DOCKERHUB_CREDENTIAL_ID = 'dockerhub'
@@ -8,14 +9,9 @@ env.GITHUB_USERNAME = 'codesenju'
 env.APP_NAME = 'cicd-project-python'
 env.K8S_MANIFESTS_REPO = 'cicd-project-python-k8s'
 /* AWS */
-env.CLUSTER_NAME = 'uat' // Jenkins agent role needs eks:DescribeCluster permissions
+env.CLUSTER_NAME = 'uat'
 env.AWS_REGION = 'us-east-1'
-// Jenkins agent role needs to be added to the aws-auth role mapping
-/*
-eksctl create iamidentitymapping --cluster $cluster_name \
-       --region=us-east-1 --arn arn:aws:iam::AWS_ACCOUNT_ID:role/ROLE_NAME \
-       --username jenkins-agent-admin --group system:masters --no-duplicate-arns
- */
+
 pipeline {
     
       triggers {
@@ -53,19 +49,19 @@ pipeline {
 stage('Checkout') {
     steps {
          script {
-               //withCredentials([string(credentialsId: "${env.GITHUB_TOKEN_ID}", variable: "GITHUB_TOKEN")]) {
+                    def gitUrl = "git@github.com:${GITHUB_USERNAME}/${GITHUB_REPO}.git"
+                    def gitCredentialId = "${GITHUB_CRDENTIAL_ID}"
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: '*/main']],
                     doGenerateSubmoduleConfigurations: false,
-                    extensions: [],
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'app-directory']],
                     submoduleCfg: [],
                     userRemoteConfigs: [[
-                        credentialsId: "${GITHUB_CRDENTIAL_ID}",
-                        url: "git@github.com:${GITHUB_USERNAME}/${GITHUB_REPO}.git"
+                        credentialsId: gitCredentialId,
+                        url: gitUrl
                     ]]
                 ])
-           //}
        }
     }
 } 
@@ -86,6 +82,7 @@ stage('Checkout') {
         */
         stage('Build and Push Docker Image') {
             steps {
+                dir('app-directory'){
                     script {
                        sh '''
                             if ! command -v trivy &> /dev/null
@@ -113,7 +110,7 @@ stage('Checkout') {
                              printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${IMAGE}" "${BUILD_NUMBER}" > build.json
                         '''
                     }
-                
+            }
             }
         }
          stage('Archive Artifacts') {
@@ -122,7 +119,7 @@ stage('Checkout') {
             }
         }
 
-stage('Deploy') {
+stage('Pre-Deploy') {
     steps {
         script {
             sh 'echo Install kustomize cli...'
@@ -143,6 +140,45 @@ stage('Deploy') {
             // Deploy the application
             sh "kubectl cluster-info"
         }
+    }
+}
+
+stage('Deploy') {
+    steps {
+            sh 'echo Install kustomize cli...'
+            sh 'curl -sLo /tmp/kustomize.tar.gz  https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.0.3/kustomize_v5.0.3_linux_amd64.tar.gz'
+            sh 'tar xzvf /tmp/kustomize.tar.gz -C /usr/bin/ && chmod +x /usr/bin/kustomize && rm -rf /tmp/kustomize.tar.gz'
+            sh 'kustomize version'
+                script {
+                    def gitUrl = "git@github.com:${GITHUB_USERNAME}/${K8S_MANIFESTS_REPO}.git"
+                    def gitCredentialId = "${GITHUB_CRDENTIAL_ID}"
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'k8s-directory']],
+                    submoduleCfg: [],
+                    userRemoteConfigs: [[
+                        credentialsId: gitCredentialId,
+                        url: gitUrl
+                    ]]
+                ])
+                dir("k8s-directory/k8s/${ENV}"){
+                sh 'cat kustomization.yaml | head -n 13'
+                sh 'kustomize edit set image KUSTOMIZE=${IMAGE}:${BUILD_NUMBER}'
+                sh 'cat kustomization.yaml | head -n 13'
+                sh 'git config --global user.email "devops@jenkins-pipeline.com"'
+                sh 'git config --global user.name "codesenju"'
+                sh 'git add kustomization.yaml'
+                sh 'git commit -m "Updated ${APP_NAME} image to ${IMAGE}:${BUILD_NUMBER}" || true'
+                // Push the changes
+                // sh 'ssh || true'
+                // sh 'apt-get install -y ssh > /dev/null'
+                withCredentials([sshUserPrivateKey(credentialsId: gitCredentialId, keyFileVariable: 'SSH_KEY')]) {
+                    sh 'eval `ssh-agent -s` && ssh-add $SSH_KEY && ssh -o StrictHostKeyChecking=no git@github.com || true && git push origin main'
+                }
+                }
+       }
     }
 }
     }
