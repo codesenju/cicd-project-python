@@ -106,17 +106,21 @@ stage('Checkout') {
                             /* Push the container to the custom Registry */
                             customImage.push()
                         }
+                        dir('app-directory'){
                         // Create Artifacts which we can use if we want to continue our pipeline for other stages 
                         sh '''
                              printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${IMAGE}" "${BUILD_NUMBER}" > build.json
                         '''
                     }
+                }
             }
             }
         }
          stage('Archive Artifacts') {
             steps {
+                dir('app-directory'){
                 archiveArtifacts artifacts: 'build.json', fingerprint: true
+                }
             }
         }
 
