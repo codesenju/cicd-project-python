@@ -164,18 +164,21 @@ stage('Deploy') {
                     ]]
                 ])
                 dir("k8s-directory/k8s/${ENV}"){
+                sh 'git status'
+                sh 'git branch -r'
                 sh 'cat kustomization.yaml | head -n 13'
                 sh 'kustomize edit set image KUSTOMIZE=${IMAGE}:${BUILD_NUMBER}'
                 sh 'cat kustomization.yaml | head -n 13'
                 sh 'git config --global user.email "devops@jenkins-pipeline.com"'
-                sh 'git config --global user.name "codesenju"'
+                sh 'git config --global user.name "jenkins-k8s-agent"'
                 sh 'git add kustomization.yaml'
                 sh 'git commit -m "Updated ${APP_NAME} image to ${IMAGE}:${BUILD_NUMBER}" || true'
                 // Push the changes
                 // sh 'ssh || true'
                 // sh 'apt-get install -y ssh > /dev/null'
+                sh 'git status'
                 withCredentials([sshUserPrivateKey(credentialsId: gitCredentialId, keyFileVariable: 'SSH_KEY')]) {
-                    sh 'eval `ssh-agent -s` && ssh-add $SSH_KEY && ssh -o StrictHostKeyChecking=no git@github.com || true && git push origin main'
+                    sh 'eval `ssh-agent -s` && ssh-add $SSH_KEY && ssh -o StrictHostKeyChecking=no git@github.com || true && git push origin HEAD:main'
                 }
                 }
        }
