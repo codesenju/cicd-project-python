@@ -14,7 +14,7 @@ spec:
   source:
     repoURL: git@github.com:${GITHUB_USERNAME}/${K8S_MANIFESTS_REPO}.git
     targetRevision: main
-    path: ${ENV}
+    path: k8a/${ENV}
   destination:
     name: ${CLUSTER_NAME}
     namespace: ${ENV}
