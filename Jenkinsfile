@@ -184,5 +184,17 @@ stage('Deploy') {
        }
     }
 }
+stage('Post-Deploy') {
+    steps {
+    'echo "Authenticate with Argocd Server..."'
+    'ARGOCD_CREDS=$(aws secretsmanager get-secret-value --secret-id iac-my-argocd-secret --query SecretString --output text)'
+    'ARGOCD_USERNAME=$(echo $ARGOCD_CREDS | jq -r .username)'
+    'ARGOCD_PASSWORD=$(echo $ARGOCD_CREDS | jq -r .password)'
+    'ARGOCD_SERVER=$(echo $ARGOCD_CREDS | jq -r .server)'
+    'argocd login $ARGOCD_SERVER --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD'
+    'argocd version'
+    }
+}
+
     }
 }
