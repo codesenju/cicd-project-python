@@ -11,7 +11,8 @@ env.K8S_MANIFESTS_REPO = 'cicd-project-python-k8s'
 /* AWS */
 env.CLUSTER_NAME = 'uat'
 env.AWS_REGION = 'us-east-1'
-
+/* Argocd*/
+env.ARGOCD_CLUSTER_NAME = 'in-cluster'
 pipeline {
     
   /*   triggers {
@@ -183,13 +184,20 @@ stage('Deploy') {
                            dir('app-directory'){
                                sh 'ls -la'
                                sh 'cat argocd.yaml'
-                               /*sh '''
-                                echo "Argocd server application status
-                                argocd app get $APP_NAME --refresh
-                                echo "Wait for argocd server application sync to complete
-                                argocd app wait $APP_NAME
-                               '''
-                               */
+                               // Assuming repo already added to argocd server
+                            // Create argocd app if it doesn't exist already
+                              def status = sh(script: 'argocd app get $APP_NAME', returnStatus: true)
+                              if (status != 0) {
+                                 sh 'echo "Argocd app doesnt exist, creating app..."'
+                                 sh 'cat argocd.yaml | envsubst'
+                                 sh 'cat argocd.yaml | envsubst | argocd app create --upsert -f -'
+                               } else {
+                                  echo 'Argocd app already exists.'
+                               }
+                               sh '''
+                                 argocd app get $APP_NAME --refresh
+                                 argocd app wait $APP_NAME
+                                '''
                            }//end-dir
                         }//end-withEnv
                     } //end-wrap
