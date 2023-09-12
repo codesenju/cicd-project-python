@@ -1,11 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Replaces SKILLSETS_API_IMAGE_NAME with the new image name and tag
+namespace: dev
+
 images:
 - name: KUSTOMIZE
   newName: codesenju/python-test
-  newTag: "17"
+  newTag: "212"
 
 resources:
 - ../base/

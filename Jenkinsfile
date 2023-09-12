@@ -15,10 +15,10 @@ env.AWS_REGION = 'us-east-1'
 env.ARGOCD_CLUSTER_NAME = 'in-cluster'
 pipeline {
     
-  /*   triggers {
+    triggers {
     githubPush()
   }
-  */
+ 
     agent {label 'k8s-agent'}
     
     //environment {
@@ -141,35 +141,58 @@ stage('Deploy') {
                 script {
                     def gitUrl = "git@github.com:${GITHUB_USERNAME}/${K8S_MANIFESTS_REPO}.git"
                     def gitCredentialId = "${GITHUB_CRDENTIAL_ID}"
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    doGenerateSubmoduleConfigurations: false,
-                    extensions: [[$class: 'DisableRemotePoll'], [$class: 'ScmName', name:"${K8S_MANIFESTS_REPO}"], [$class: 'IgnoreNotifyCommit'], [$class: 'RelativeTargetDirectory', relativeTargetDir: 'k8s-directory']],
-                    submoduleCfg: [],
-                    userRemoteConfigs: [[
-                        credentialsId: gitCredentialId,
-                        url: gitUrl
-                    ]]
-                ])
-                dir("k8s-directory/k8s/${ENV}"){
-                sh 'git status'
-                sh 'git branch -r'
-                sh 'cat kustomization.yaml | head -n 13'
-                sh 'kustomize edit set image KUSTOMIZE=${IMAGE}:${BUILD_NUMBER}'
-                sh 'cat kustomization.yaml | head -n 13'
-                sh 'git config --global user.email "devops@jenkins-pipeline.com"'
-                sh 'git config --global user.name "jenkins-k8s-agent"'
-                sh 'git add kustomization.yaml'
-                sh 'git commit -m "Updated ${APP_NAME} image to ${IMAGE}:${BUILD_NUMBER}" || true'
+                // Do not use second SCM as it will cause infinite triggers when pushing changes
+                //checkout([
+                //    $class: 'GitSCM',
+                //    branches: [[name: '*/main']],
+                //    doGenerateSubmoduleConfigurations: false,
+                //    extensions: [[$class: 'DisableRemotePoll'], [$class: 'ScmName', name:"${K8S_MANIFESTS_REPO}"], [$class: 'IgnoreNotifyCommit'], [$class: 'RelativeTargetDirectory', relativeTargetDir: 'k8s-directory']],
+                //    submoduleCfg: [],
+                //    userRemoteConfigs: [[
+                //        credentialsId: gitCredentialId,
+                //        url: gitUrl
+                //    ]]
+                //]) 
+                
+                //dir("k8s-directory/k8s/${ENV}"){
+                //sh 'git status'
+                //sh 'git branch -r'
+                //sh 'cat kustomization.yaml | head -n 13'
+                //sh 'kustomize edit set image KUSTOMIZE=${IMAGE}:${BUILD_NUMBER}'
+                //sh 'cat kustomization.yaml | head -n 13'
+                //sh 'git config --global user.email "devops@jenkins-pipeline.com"'
+                //sh 'git config --global user.name "jenkins-k8s-agent"'
+                //sh 'git add kustomization.yaml'
+                //sh 'git commit -m "Updated ${APP_NAME} image to ${IMAGE}:${BUILD_NUMBER}" || true'
                 // Push the changes
                 // sh 'ssh || true'
                 // sh 'apt-get install -y ssh > /dev/null'
-                sh 'git status'
+                //sh 'git status'
+                // Updating k8s repo with non gitSCM method to aviod non stop build triggers
+                // Alternative to second SCM we will clone manually
                 withCredentials([sshUserPrivateKey(credentialsId: gitCredentialId, keyFileVariable: 'SSH_KEY')]) {
-                    sh 'eval `ssh-agent -s` && ssh-add $SSH_KEY && ssh -o StrictHostKeyChecking=no git@github.com || true && git push origin HEAD:main'
+                    sh '''eval `ssh-agent -s`
+                          ssh-add $SSH_KEY
+                          ssh -o StrictHostKeyChecking=no git@github.com || true
+                          TEMPDIR=$(mktemp -d)
+                          cd $TEMPDIR
+                          git clone git@github.com:${GITHUB_USERNAME}/${K8S_MANIFESTS_REPO}.git
+                          pwd && ls -ls
+                          cd $K8S_MANIFESTS_REPO/k8s/$ENV
+                          git status
+                          git remote -v
+                          cat kustomization.yaml | head -n 13
+                          kustomize edit set image KUSTOMIZE=${IMAGE}:${BUILD_NUMBER}
+                          cat kustomization.yaml | head -n 13
+                          git config --global user.email "devops@jenkins-pipeline.com"
+                          git config --global user.name "jenkins-k8s-agent"
+                          git add kustomization.yaml
+                          git commit -m "Updated ${APP_NAME} image to ${IMAGE}:${BUILD_NUMBER}" || true
+                          git status
+                          git push origin HEAD:main
+                    '''
                 }//end-withCredentials
-                }//end-dir
+                //}//end-dir
              
            // Argocd Deployment
             sh 'echo "Authenticate with Argocd Server..."'

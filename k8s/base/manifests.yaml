@@ -35,7 +35,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /healthz
-            port: 5000
+            port: 8000
           initialDelaySeconds: 5
           timeoutSeconds: 2
           successThreshold: 1
@@ -44,14 +44,14 @@ spec:
         readinessProbe:
           httpGet:
             path: /healthz
-            port: 5000
+            port: 8000
           initialDelaySeconds: 5
           timeoutSeconds: 2
           successThreshold: 1
           failureThreshold: 3
           periodSeconds: 10
         ports:
-        - containerPort: 5000
+        - containerPort: 8000
           name: http
       restartPolicy: Always
 ---
@@ -64,7 +64,7 @@ spec:
     app: cicd-project-python
   ports:
     - port: 80
-      targetPort: 5000
+      targetPort: 8000
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -74,6 +74,7 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
+  ingressClassName: nginx
   rules:
     - host: cicd-project-python.lmasu.co.za
       http:
