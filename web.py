@@ -7,7 +7,7 @@ def hello_world():
 
 @app.route('/healthz')
 def health():
-    return 'Health is OK!'
+    return 'OK!'
 
 if __name__ == '__main__':
     app.run()
