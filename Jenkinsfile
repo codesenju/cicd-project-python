@@ -1,9 +1,9 @@
 env.ENV = 'dev'
 env.IMAGE = 'codesenju/python-test'
 /* Docker */
-env.DOCKERHUB_CREDENTIAL_ID = 'dockerhub'
+env.DOCKERHUB_CREDENTIAL_ID = 'dockerhub_credentials'
 /* Github  */
-env.GITHUB_CRDENTIAL_ID = 'git-ssh-pvt'
+env.GITHUB_CRDENTIAL_ID = 'github_pvt_key'
 env.GITHUB_REPO = 'cicd-project-python'
 env.GITHUB_USERNAME = 'codesenju'
 env.APP_NAME = 'cicd-project-python'
@@ -19,8 +19,30 @@ pipeline {
     githubPush()
   }
  
-    agent {label 'k8s-agent'}
-    
+    // agent {label 'k8s-agent'}
+        agent {kubernetes {
+        // inheritFrom 'k8s_agent' 
+        yaml '''
+kind: "Pod"
+spec:
+  nodeSelector:
+    karpenter.sh/provisioner-name: "jenkins-agent"
+  serviceAccount: jenkins-agent-sa
+  containers:
+  - name: "jnlp"
+    image: "codesenju/jenkins-inbound-agent:k8s"
+    volumeMounts:
+    - mountPath: "/var/run/docker.sock"
+      name: "docker-socket"
+    securityContext:
+      runAsUser: 0
+  volumes:
+  - hostPath:
+      path: "/var/run/docker.sock"
+      type: Socket 
+    name: "docker-socket"
+    '''
+    } }
     //environment {
         /* Set environment variables */
 
@@ -106,13 +128,11 @@ stage('Checkout') {
                             /* Push the container to the custom Registry */
                             customImage.push()
                         }
-                        dir('app-directory'){
-                        // Create Artifacts which we can use if we want to continue our pipeline for other stages 
+                        // Create Artifacts which we can use if we want to continue our pipeline for other stages/pipelines
                         sh '''
                              printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${IMAGE}" "${BUILD_NUMBER}" > build.json
                         '''
-                    }
-                }
+                }//end-app-directory
             }
             }
         }
