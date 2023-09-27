@@ -29,11 +29,6 @@ spec:
     karpenter.sh/provisioner-name: "jenkins-agent"
   serviceAccount: jenkins-agent-sa
   containers:
-  - name: python
-    image: python:3.9.18-bullseye
-    command:
-    - cat
-    tty: true
   - name: "jnlp"
     image: "codesenju/jenkins-inbound-agent:k8s"
     volumeMounts:
@@ -74,65 +69,7 @@ stage('Checkout') {
        }
     }
 } 
-
-
-        stage('Test') {
-            parallel {
-                stage('IaC') {
-                    steps {
-                        dir('app-directory'){
-                            script {
-                                sh '''
-                                    if ! command -v trivy &> /dev/null
-                                    then
-                                        echo "Trivy is not installed. Installing now."
-                                        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.22.0
-                                    else
-                                        echo "Trivy is already installed."
-                                    fi
-                                    trivy --version
-                                '''
-                                /* Scan for IaC misconfigurations */
-                                sh "trivy fs --exit-code 0 --severity HIGH --no-progress --security-checks vuln,config ./ || true"
-                                sh "trivy fs --exit-code 1 --severity CRITICAL --no-progress --security-checks vuln,config ./ || true"
-                            }//end-app-directory
-                        }
-                    }
-                } // end IaC
-                stage('Unit Test') {
-                    steps {
-                        dir('app-directory'){
-                            script {
-                               container('python'){
-                               sh '''
-                                pip install -r requirements.txt
-                                pytest
-                                '''
-                               }
-                            }
-                        }//end-app-directory
-                    }
-                } // end Unit Test
-                stage('Vulnerability Checks') {
-                    steps {
-                        dir('app-directory'){
-                            script {
-                              container('python'){
-                               sh '''
-                                pip install -r requirements.txt
-                                bandit web.py
-                                safety check -r requirements.txt
-                                '''
-                               }
-                            }
-                        }//end-app-directory
-                    }
-                } // end Unit Test
-            }
-        } // end Test
-        
-
-        stage('Build, Scan and Push') {
+        stage('Build and Push Docker Image') {
             steps {
                 dir('app-directory'){
                     script {
@@ -147,6 +84,9 @@ stage('Checkout') {
                             trivy --version
                         '''
                         docker.withRegistry("https://registry.hub.docker.com", "${env.DOCKERHUB_CREDENTIAL_ID}") {
+                            /* Scan for IaC misconfigurations */
+                            sh "trivy fs --exit-code 0 --severity HIGH --no-progress --security-checks vuln,config ./ || true"
+                            sh "trivy fs --exit-code 1 --severity CRITICAL --no-progress --security-checks vuln,config ./ || true"
                             def customImage = docker.build("${env.IMAGE}:${env.BUILD_NUMBER}", "--network=host .")
                             /* Scan image for vulnerabilities */
                             sh "trivy image --exit-code 0 --severity HIGH --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true"
@@ -162,7 +102,6 @@ stage('Checkout') {
                 }
             }
         }
-        
          stage('Archive Artifacts') {
             steps {
                 dir('app-directory'){

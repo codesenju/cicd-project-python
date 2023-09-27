@@ -1,0 +1,55 @@
+
+        stage('Test') {
+            parallel {
+                stage('IaC') {
+                    steps {
+                        dir('app-directory'){
+                            script {
+                                sh '''
+                                    if ! command -v trivy &> /dev/null
+                                    then
+                                        echo "Trivy is not installed. Installing now."
+                                        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.22.0
+                                    else
+                                        echo "Trivy is already installed."
+                                    fi
+                                    trivy --version
+                                '''
+                                /* Scan for IaC misconfigurations */
+                                sh "trivy fs --exit-code 0 --severity HIGH --no-progress --security-checks vuln,config ./ || true"
+                                sh "trivy fs --exit-code 1 --severity CRITICAL --no-progress --security-checks vuln,config ./ || true"
+                            }//end-app-directory
+                        }
+                    }
+                } // end IaC
+                stage('Unit Test') {
+                    steps {
+                        dir('app-directory'){
+                            script {
+                               sh '''
+                                python3 --version
+                                apt-get install python3-pip -y
+                                pip3 install pytest
+                                pytest
+                                '''
+                            }//end-app-directory
+                        }
+                    }
+                } // end Unit Test
+                stage('Vulnerability Checks') {
+                    steps {
+                        dir('app-directory'){
+                            script {
+                               sh '''
+                                python3 --version
+                                apt-get install python3-pip -y
+                                pip3 install bandit safety
+                                bandit web.py
+                                safety check -r requirements.txt
+                                '''
+                            }//end-app-directory
+                        }
+                    }
+                } // end Unit Test
+            }
+        } // end Test
