@@ -2,14 +2,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: python-app
+  name: cicd-project-python
   namespace: default
   labels:
-    app: python-app
+    app: cicd-project-python
 spec:
   selector:
     matchLabels:
-      app: python-app
+      app: cicd-project-python
   replicas: 3
   strategy:
     rollingUpdate:
@@ -19,12 +19,12 @@ spec:
   template:
     metadata:
       labels:
-        app: python-app
+        app: cicd-project-python
     spec:
       containers:
-      - name: python-app
-        image: python-app:v1
-        imagePullPolicy: Never
+      - name: cicd-project-python
+        image: KUSTOMIZE
+        imagePullPolicy: Always
         resources:
           requests:
             cpu: 100m
@@ -35,7 +35,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /healthz
-            port: 5000
+            port: 8000
           initialDelaySeconds: 5
           timeoutSeconds: 2
           successThreshold: 1
@@ -44,43 +44,45 @@ spec:
         readinessProbe:
           httpGet:
             path: /healthz
-            port: 5000
+            port: 8000
           initialDelaySeconds: 5
           timeoutSeconds: 2
           successThreshold: 1
           failureThreshold: 3
           periodSeconds: 10
         ports:
-        - containerPort: 5000
+        - containerPort: 8000
           name: http
       restartPolicy: Always
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: python-app-service
+  name: cicd-project-python-service
 spec:
   selector:
-    app: python-app
+    app: cicd-project-python
   ports:
     - port: 80
-      targetPort: 5000
+      targetPort: 8000
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: python-app-ingress
+  name: cicd-project-python-ingress
   namespace: default
   annotations:
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
+  ingressClassName: nginx
   rules:
-    - http:
+    - host: cicd-project-python.lmasu.co.za
+      http:
         paths:
           - pathType: Prefix
             path: /
             backend:
               service:
-                name: python-app-service
+                name: cicd-project-python-service
                 port:
                   number: 80
