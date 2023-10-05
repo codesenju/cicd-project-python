@@ -32,3 +32,5 @@ Thumbs.db
 
 .venv/
 .DS_Store
+.scannerwork/.sonar_lock
+.scannerwork/report-task.txt
