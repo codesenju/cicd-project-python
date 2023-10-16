@@ -259,6 +259,7 @@ safety check -r requirements.txt
 
 # More
 ```bash
+
 To automatically trigger the pipeline on a commit to the main branch, you can use a webhook in your version control system (in this case, GitHub). Here are the steps to set it up:
 
 1. Go to your GitHub repository.
