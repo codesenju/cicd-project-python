@@ -14,7 +14,7 @@ spec:
   source:
     repoURL: git@github.com:${GITHUB_USERNAME}/${K8S_MANIFESTS_REPO}.git
     targetRevision: main
-    path: k8s/${ENV}
+    path: ${APP_NAME}/k8s/${ENV}
   destination:
     name: ${ARGOCD_CLUSTER_NAME}
     namespace: ${ENV}
