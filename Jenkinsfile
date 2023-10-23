@@ -7,7 +7,7 @@ env.GITHUB_CRDENTIAL_ID = 'github_pvt_key'
 env.GITHUB_REPO = 'cicd-project-python'
 env.GITHUB_USERNAME = 'codesenju'
 env.APP_NAME = 'cicd-project-python'
-env.K8S_MANIFESTS_REPO = 'cicd-project-python-k8s'
+env.K8S_MANIFESTS_REPO = 'cicd-project-k8s'
 /* AWS */
 env.CLUSTER_NAME = 'uat'
 env.AWS_REGION = 'us-east-1'
@@ -28,6 +28,10 @@ spec:
   nodeSelector:
     karpenter.sh/provisioner-name: "jenkins-agent"
   serviceAccount: jenkins-agent-sa
+  tolerations:
+    - key: "dedicated-jenkins-agent"
+      operator: "Exists"
+      effect: "NoExecute"
   containers:
   - name: python
     image: python:3.9.18-bullseye
@@ -171,7 +175,7 @@ stage('Checkout') {
             }
         }
 
-stage('Deploy') {
+stage('Deploy - DEV') {
     steps { 
             sh 'echo Install kubectl cli...'
             sh 'curl -o /usr/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.4/2023-08-16/bin/linux/amd64/kubectl && chmod +x /usr/bin/kubectl'
@@ -197,8 +201,8 @@ stage('Deploy') {
                           TEMPDIR=$(mktemp -d)
                           cd $TEMPDIR
                           git clone git@github.com:${GITHUB_USERNAME}/${K8S_MANIFESTS_REPO}.git
-                          pwd && ls -ls
-                          cd $K8S_MANIFESTS_REPO/k8s/$ENV
+                          cd $K8S_MANIFESTS_REPO/$APP_NAME/k8s/$ENV
+                          ls -la
                           git status
                           git remote -v
                           cat kustomization.yaml | head -n 13
@@ -214,7 +218,7 @@ stage('Deploy') {
                 }//end-withCredentials
                 //}//end-dir
              
-           // Argocd Deployment
+           // Argocd Deployment - DEV
             sh 'echo "Authenticate with Argocd Server..."'
             def ARGOCD_CREDS = sh(script: 'aws secretsmanager get-secret-value --secret-id iac-my-argocd-secret --query SecretString --output text', returnStdout: true).trim()
              wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: ARGOCD_CREDS]]]) {  
@@ -237,6 +241,10 @@ stage('Deploy') {
                               if (status != 0) {
                                  sh 'echo "Argocd app doesnt exist, creating app..."'
                                  sh 'cat argocd.yaml | envsubst'
+                                 sh '''
+                                    pwd
+                                    ls -l
+                                    '''
                                  sh 'cat argocd.yaml | envsubst | argocd app create --upsert -f -'
                                } else {
                                   echo 'Argocd app already exists.'
