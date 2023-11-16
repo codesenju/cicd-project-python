@@ -3,7 +3,7 @@ env.IMAGE = 'codesenju/python-test'
 /* Docker */
 env.DOCKERHUB_CREDENTIAL_ID = 'dockerhub_credentials'
 /* Github  */
-env.GITHUB_CRDENTIAL_ID = 'github_pvt_key'
+env.GITHUB_CRDENTIAL_ID = 'jenkins-github-lmasu'
 env.GITHUB_REPO = 'cicd-project-python'
 env.GITHUB_USERNAME = 'codesenju'
 env.APP_NAME = 'cicd-project-python'
