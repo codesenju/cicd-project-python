@@ -30,7 +30,7 @@ spec:
   serviceAccount: jenkins-agent-sa
   tolerations:
     - key: "dedicated-jenkins-agent"
-      operator: "Exists"
+      operator: "Equal"
       effect: "NoExecute"
   containers:
   - name: python
