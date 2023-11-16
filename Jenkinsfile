@@ -86,7 +86,7 @@ stages {
 // } 
 
 
-        stage('Test') {
+        stage('Parallel Tests') {
             parallel {
                 stage('IaC') {
                     steps {
