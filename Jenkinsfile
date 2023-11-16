@@ -90,7 +90,7 @@ stages {
             parallel {
                 stage('IaC') {
                     steps {
-                        dir('app-directory'){
+
                             script {
                                 sh '''
                                     if ! command -v trivy &> /dev/null
@@ -110,13 +110,12 @@ stages {
                                   ls -la
                                   pwd
                                 """
-                            }//end-app-directory
-                        }
+                            }//end-script
                     }
                 } // end IaC
                 stage('Unit Test') {
                     steps {
-                        dir('app-directory'){
+
                             script {
                                container('python'){
                                sh '''
@@ -125,12 +124,10 @@ stages {
                                 '''
                                }
                             }
-                        }//end-app-directory
                     }
                 } // end Unit Test
                 stage('Vulnerability Checks') {
                     steps {
-                        dir('app-directory'){
                             script {
                               container('python'){
                                sh '''
@@ -140,7 +137,6 @@ stages {
                                 '''
                                }
                             }
-                        }//end-app-directory
                     }
                 } // end Unit Test
             }
@@ -149,7 +145,7 @@ stages {
 
         stage('Build, Scan and Push') {
             steps {
-                dir('app-directory'){
+    
                     script {
                        sh '''
                             if ! command -v trivy &> /dev/null
@@ -173,16 +169,13 @@ stages {
                         sh '''
                              printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${IMAGE}" "${BUILD_NUMBER}" > build.json
                         '''
-                   }//end-app-directory
-                }
+                   }//end-script
             }
         }
         
          stage('Archive Artifacts') {
             steps {
-                dir('app-directory'){
                 archiveArtifacts artifacts: 'build.json', fingerprint: true
-                }
             }
         }
 
@@ -243,7 +236,6 @@ stage('Deploy - DEV') {
                     wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: ARGOCD_PASSWORD],[password: ARGOCD_USERNAME], [password: ARGOCD_SERVER]]]) {
                         withEnv(["USERNAME=${ARGOCD_USERNAME}", "PASSWORD=${ARGOCD_PASSWORD}","SERVER=${ARGOCD_SERVER}"]){
                            sh 'argocd login $SERVER --username $USERNAME --password $PASSWORD'
-                           dir('app-directory'){
                                sh 'ls -la'
                                sh 'cat argocd.yaml'
                                // Assuming repo already added to argocd server
@@ -264,7 +256,6 @@ stage('Deploy - DEV') {
                                  argocd app get $APP_NAME --refresh
                                  argocd app wait $APP_NAME
                                 '''
-                           }//end-dir
                         }//end-withEnv
                     } //end-wrap
                   }//end-withEnv
