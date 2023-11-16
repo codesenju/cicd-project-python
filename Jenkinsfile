@@ -64,25 +64,26 @@ spec:
     
 stages {
  
-stage('Checkout') {
-    steps {
-         script {
-                    def gitUrl = "git@github.com:${GITHUB_USERNAME}/${GITHUB_REPO}.git"
-                    def gitCredentialId = "${GITHUB_CRDENTIAL_ID}"
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    doGenerateSubmoduleConfigurations: false,
-                    extensions: [[$class: 'ScmName', name:"${GITHUB_REPO}"], [$class: 'RelativeTargetDirectory', relativeTargetDir: 'app-directory']],
-                    submoduleCfg: [],
-                    userRemoteConfigs: [[
-                        credentialsId: gitCredentialId,
-                        url: gitUrl
-                    ]]
-                ])
-       }
-    }
-} 
+// // SKIP IF USING JENKINS ORGANISATION FOLDERS
+// stage('Checkout') {
+//     steps {
+//          script {
+//                     def gitUrl = "git@github.com:${GITHUB_USERNAME}/${GITHUB_REPO}.git"
+//                     def gitCredentialId = "${GITHUB_CRDENTIAL_ID}"
+//                 checkout([
+//                     $class: 'GitSCM',
+//                     branches: [[name: '*/main']],
+//                     doGenerateSubmoduleConfigurations: false,
+//                     extensions: [[$class: 'ScmName', name:"${GITHUB_REPO}"], [$class: 'RelativeTargetDirectory', relativeTargetDir: 'app-directory']],
+//                     submoduleCfg: [],
+//                     userRemoteConfigs: [[
+//                         credentialsId: gitCredentialId,
+//                         url: gitUrl
+//                     ]]
+//                 ])
+//        }
+//     }
+// } 
 
 
         stage('Test') {
