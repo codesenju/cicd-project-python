@@ -200,6 +200,7 @@ stage('Deploy - DEV') {
                 // Alternative to second SCM we will clone manually
                 withCredentials([sshUserPrivateKey(credentialsId: gitCredentialId, keyFileVariable: 'SSH_KEY')]) {
                     sh '''eval `ssh-agent -s`
+                          sleeep 99999
                           ssh-add $SSH_KEY
                           ssh -o StrictHostKeyChecking=no git@github.com || true
                           TEMPDIR=$(mktemp -d)
