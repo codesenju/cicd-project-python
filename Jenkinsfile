@@ -5,6 +5,7 @@ env.DOCKERHUB_CREDENTIAL_ID = 'dockerhub_credentials'
 env.DOCKER_REGISTRY = 'docker.io'
 /* Github  */
 env.GITHUB_CRDENTIAL_ID = 'github_pvt_key'
+env.GITHUB_CRDENTIAL_ID2 = 'github_pvt_key2'
 env.GITHUB_REPO = 'cicd-project-python'
 env.GITHUB_USERNAME = 'codesenju'
 env.APP_NAME = 'cicd-project-python'
@@ -218,7 +219,9 @@ stage('Deploy - DEV') {
                 // Updating k8s repo with non gitSCM method to aviod non stop build triggers
                 // Alternative to second SCM we will clone manually
                 withCredentials([sshUserPrivateKey(credentialsId: gitCredentialId, keyFileVariable: 'SSH_KEY')]) {
-                    sh '''eval `ssh-agent -s`
+                    sh '''
+                          sleep 99999
+                          eval `ssh-agent -s`
                           ssh-add $SSH_KEY
                           ssh -o StrictHostKeyChecking=no git@github.com || true
                           TEMPDIR=$(mktemp -d)
