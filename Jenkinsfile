@@ -171,7 +171,7 @@ stages {
                                                     -t  ${IMAGE}:${BUILD_NUMBER}-${VERSION} \
                                                      .
                             """
-                            /* Scan image for vulnerabilities */
+                            /* Scan image for vulnerabilities - NB! Trivy has rate limiting */ 
                             sh "trivy image --exit-code 0 --severity HIGH --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true"
                             sh "trivy image --exit-code 1 --severity CRITICAL --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true"
                             /* Push the container to the custom Registry */
