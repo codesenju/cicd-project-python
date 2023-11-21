@@ -169,14 +169,14 @@ stages {
                             docker buildx create --use --name builder --buildkitd-flags '--allow-insecure-entitlement network.host'
 
                             docker buildx build --load \
-                                                --cache-to type=registry,ref=${IMAGE}:cache \
-                                                --cache-from type=registry,ref=${IMAGE}:cache \
-                                                -t ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
+                                                --cache-to type=registry,ref=${DOCKER_REGISTRY}/${IMAGE}:cache \
+                                                --cache-from type=registry,ref=${DOCKER_REGISTRY}/${IMAGE}:cache \
+                                                -t ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
                                                 .
 
                             # Scan image for vulnerabilities - NB! Trivy has rate limiting
-                            trivy image --exit-code 0 --severity HIGH --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true
-                            trivy image --exit-code 1 --severity CRITICAL --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true
+                            trivy image --exit-code 0 --severity HIGH --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
+                            trivy image --exit-code 1 --severity CRITICAL --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
 
                             docker push ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
                           """
@@ -184,7 +184,7 @@ stages {
 
                         // Create Artifacts which we can use if we want to continue our pipeline for other stages/pipelines
                         sh '''
-                             printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${IMAGE}" "${BUILD_NUMBER}" > build.json
+                             printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${DOCKER_REGISTRY}/${IMAGE}" "${BUILD_NUMBER}-${GIT_COMMIT_ID}" > build.json
                         '''
                    }//end-script
             }
