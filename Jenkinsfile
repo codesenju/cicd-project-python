@@ -169,6 +169,7 @@ stages {
                                                     --cache-to type=registry,ref=${IMAGE}:cache \
                                                     --cache-from type=registry,ref=${IMAGE}:cache \
                                                     -t ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
+                                                    --network host \
                                                      .
                             """
                             /* Scan image for vulnerabilities - NB! Trivy has rate limiting */ 
