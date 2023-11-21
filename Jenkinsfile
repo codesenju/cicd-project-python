@@ -175,8 +175,10 @@ stages {
                                                 .
 
                             # Scan image for vulnerabilities - NB! Trivy has rate limiting
-                            trivy image --exit-code 0 --severity HIGH --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
-                            trivy image --exit-code 1 --severity CRITICAL --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
+                            # If you would like to scan the image on your host machine, you need to mount docker.sock
+                            # docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy:0.28.1 python:3.4-alpine
+                            # trivy image --exit-code 0 --severity HIGH --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
+                            # trivy image --exit-code 1 --severity CRITICAL --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
 
                             docker push ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
                           """
