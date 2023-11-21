@@ -166,6 +166,7 @@ stages {
                             sh 'docker buildx create --use --name builder --buildkitd-flags "--allow-insecure-entitlement network.host"'
 
                             sh """
+                                docker login
                                 docker buildx build --load \
                                                     --cache-to type=registry,ref=${IMAGE}:cache \
                                                     --cache-from type=registry,ref=${IMAGE}:cache \
