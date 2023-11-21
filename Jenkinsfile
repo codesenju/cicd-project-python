@@ -149,7 +149,7 @@ stages {
     
                     script {
 
-                      env.GIT_COMMIT_ID = sh(script: 'git rev-parse --short HEAD" ',returnStdout: true).trim()
+                      env.GIT_COMMIT_ID = sh(script: 'git rev-parse --short HEAD',returnStdout: true).trim()
 
                        sh '''
                             if ! command -v trivy &> /dev/null
