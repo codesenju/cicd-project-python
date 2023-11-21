@@ -2,7 +2,7 @@ env.ENV = 'dev'
 env.IMAGE = 'codesenju/python-test'
 /* Docker */
 env.DOCKERHUB_CREDENTIAL_ID = 'dockerhub_credentials'
-env.DOCKER_REGISTRY = 'https://registry.hub.docker.com'
+env.DOCKER_REGISTRY = 'docker.io'
 /* Github  */
 env.GITHUB_CRDENTIAL_ID = 'github_pvt_key'
 env.GITHUB_REPO = 'cicd-project-python'
