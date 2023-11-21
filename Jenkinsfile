@@ -215,7 +215,7 @@ stage('Deploy - DEV') {
             // sh "kubectl cluster-info"
                 script {
                     def gitUrl = "git@github.com:${GITHUB_USERNAME}/${K8S_MANIFESTS_REPO}.git"
-                    def gitCredentialId = "${GITHUB_CRDENTIAL_ID}"
+                    def gitCredentialId = "${GITHUB_CRDENTIAL_ID2}"
                 // Updating k8s repo with non gitSCM method to aviod non stop build triggers
                 // Alternative to second SCM we will clone manually
                 withCredentials([sshUserPrivateKey(credentialsId: gitCredentialId, keyFileVariable: 'SSH_KEY')]) {
