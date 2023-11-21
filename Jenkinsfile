@@ -161,24 +161,22 @@ stages {
                             
                             // Authenticate with docker registry
                           withCredentials([usernamePassword(credentialsId: env.DOCKERHUB_CREDENTIAL_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                                sh "echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin ${DOCKER_REGISTRY}"
+                            sh """echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin ${DOCKER_REGISTRY}
                        
-                            sh 'docker buildx create --use --name builder --buildkitd-flags "--allow-insecure-entitlement network.host"'
+                            docker buildx create --use --name builder --buildkitd-flags '--allow-insecure-entitlement network.host'
 
-                            sh """
-                                docker buildx build --load \
-                                                    --cache-to type=registry,ref=${IMAGE}:cache \
-                                                    --cache-from type=registry,ref=${IMAGE}:cache \
-                                                    -t ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
-                                                    .
 
-                            """
-                            /* Scan image for vulnerabilities - NB! Trivy has rate limiting */ 
-                            sh "trivy image --exit-code 0 --severity HIGH --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true"
-                            sh "trivy image --exit-code 1 --severity CRITICAL --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true"
+                            docker buildx build --load \
+                                                --cache-to type=registry,ref=${IMAGE}:cache \
+                                                --cache-from type=registry,ref=${IMAGE}:cache \
+                                                -t ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
+                                                .
+                            # Scan image for vulnerabilities - NB! Trivy has rate limiting
+                            trivy image --exit-code 0 --severity HIGH --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true
+                            trivy image --exit-code 1 --severity CRITICAL --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true
 
-                            sh "docker push ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}"
-
+                            docker push ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
+                          """
                           }
 
                         // Create Artifacts which we can use if we want to continue our pipeline for other stages/pipelines
