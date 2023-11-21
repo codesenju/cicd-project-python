@@ -162,19 +162,15 @@ stages {
                             // def customImage = docker.build("${env.IMAGE}:${env.BUILD_NUMBER}", "--network=host .")
 
                             // sh 'docker buildx create --use --name builder --buildkitd-flags "--allow-insecure-entitlement localhost"'
-                            
+
                             sh 'echo waiting for docker daemon to be ready...; until docker ps; do sleep 3; done;'
                             sh """
-                                # docker buildx build --load \
-                                #                     --cache-to type=registry,ref=${IMAGE}:cache \
-                                #                     --cache-from type=registry,ref=${IMAGE}:cache \
-                                #                     -t ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
-                                #                     .
+                                docker buildx build --load \
+                                                    --cache-to type=registry,ref=${IMAGE}:cache \
+                                                    --cache-from type=registry,ref=${IMAGE}:cache \
+                                                    -t ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
+                                                    .
 
-                                docker build --cache-to type=registry,ref=${IMAGE}:cache \
-                                             --cache-from type=registry,ref=${IMAGE}:cache \
-                                             -t ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
-                                             .
                             """
                             /* Scan image for vulnerabilities - NB! Trivy has rate limiting */ 
                             sh "trivy image --exit-code 0 --severity HIGH --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true"
