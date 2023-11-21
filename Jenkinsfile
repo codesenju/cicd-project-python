@@ -164,14 +164,13 @@ stages {
                           docker.withRegistry(env.DOCKER_REGISTRY,env.DOCKERHUB_CREDENTIAL_ID) {
                             // def customImage = docker.build("${env.IMAGE}:${env.BUILD_NUMBER}", "--network=host .")
                             sh """
-                                docker buildx create --use
+                                docker buildx create --use --name builder --buildkitd-flags '--allow-insecure-entitlement network.host'
                                 docker buildx build --load \
                                                     --cache-to type=registry,ref=${IMAGE}:cache \
                                                     --cache-from type=registry,ref=${IMAGE}:cache \
                                                     -t ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
-                                                    --buildkitd-flags '--allow-insecure-entitlement network.host' \
                                                     --network host \
-                                                     .
+                                                    .
                             """
                             /* Scan image for vulnerabilities - NB! Trivy has rate limiting */ 
                             sh "trivy image --exit-code 0 --severity HIGH --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true"
