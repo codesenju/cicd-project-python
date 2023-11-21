@@ -11,3 +11,4 @@ RUN apt-get update --no-install-recommends && \
 
 EXPOSE 8000
 ENTRYPOINT  gunicorn -w 4 -b 0.0.0.0:8000 web:app
+# test

@@ -15,7 +15,7 @@ env.AWS_REGION = 'us-east-1'
 env.ARGOCD_CLUSTER_NAME = 'in-cluster'
 pipeline {
     
-    triggers {
+  triggers {
     githubPush()
   }
  
