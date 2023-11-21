@@ -149,7 +149,7 @@ stages {
     
                     script {
 
-                      env.VERSION = sh(script: 'echo "0.12.0-$(git rev-parse --short HEAD)" ',returnStdout: true).trim()
+                      env.GIT_COMMIT_ID = sh(script: 'git rev-parse --short HEAD" ',returnStdout: true).trim()
 
                        sh '''
                             if ! command -v trivy &> /dev/null
@@ -168,15 +168,15 @@ stages {
                                 docker buildx build --load \
                                                     --cache-to type=registry,ref=${IMAGE}:cache \
                                                     --cache-from type=registry,ref=${IMAGE}:cache \
-                                                    -t ${IMAGE}:${BUILD_NUMBER}-${VERSION} \
+                                                    -t ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
                                                      .
                             """
                             /* Scan image for vulnerabilities - NB! Trivy has rate limiting */ 
                             sh "trivy image --exit-code 0 --severity HIGH --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true"
                             sh "trivy image --exit-code 1 --severity CRITICAL --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true"
 
-                            sh "docker push ${IMAGE}:${BUILD_NUMBER}-${VERSION}"
-                            
+                            sh "docker push ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}"
+
                             /* Push the container to the custom Registry */
                             /* customImage.push() */
                         } //docker.withRegistry-END
