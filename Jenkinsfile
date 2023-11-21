@@ -174,6 +174,8 @@ stages {
                             /* Scan image for vulnerabilities - NB! Trivy has rate limiting */ 
                             sh "trivy image --exit-code 0 --severity HIGH --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true"
                             sh "trivy image --exit-code 1 --severity CRITICAL --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true"
+
+                            docker push ${IMAGE}:${BUILD_NUMBER}-${VERSION}
                             /* Push the container to the custom Registry */
                             /* customImage.push() */
                         } //docker.withRegistry-END
