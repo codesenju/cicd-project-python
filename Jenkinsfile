@@ -44,7 +44,7 @@ spec:
     env:
     - name: DOCKER_HOST # the docker daemon can be accessed on the standard port on localhost
       value: "127.0.0.1"
-    securityContext:
+    securityContext: 
       runAsUser: 0
   - name: "dind"
     env:
@@ -52,7 +52,7 @@ spec:
       value: ""
     image: "docker:19.03.13-dind"
     securityContext:
-      privileged: true
+      privileged: true  # the Docker daemon can only run in a privileged container
     '''
     } }
     //environment {
@@ -166,7 +166,6 @@ stages {
                                                     --cache-to type=registry,ref=${IMAGE}:cache \
                                                     --cache-from type=registry,ref=${IMAGE}:cache \
                                                     -t ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
-                                                    --network host \
                                                     .
                             """
                             /* Scan image for vulnerabilities - NB! Trivy has rate limiting */ 
@@ -177,7 +176,9 @@ stages {
 
                             /* Push the container to the custom Registry */
                             /* customImage.push() */
+
                         } //docker.withRegistry-END
+
                         // Create Artifacts which we can use if we want to continue our pipeline for other stages/pipelines
                         sh '''
                              printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${IMAGE}" "${BUILD_NUMBER}" > build.json
