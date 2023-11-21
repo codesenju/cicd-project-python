@@ -161,6 +161,7 @@ stages {
                           docker.withRegistry(env.DOCKER_REGISTRY,env.DOCKERHUB_CREDENTIAL_ID) {
                             // def customImage = docker.build("${env.IMAGE}:${env.BUILD_NUMBER}", "--network=host .")
                             sh 'docker buildx create --use --name builder --buildkitd-flags "--allow-insecure-entitlement localhost"'
+                            sh 'echo waiting for docker daemon to be ready...; until docker ps; do sleep 3; done;'
                             sh """
                                 docker buildx build --load \
                                                     --cache-to type=registry,ref=${IMAGE}:cache \
