@@ -2,6 +2,7 @@ env.ENV = 'dev'
 env.IMAGE = 'codesenju/python-test'
 /* Docker */
 env.DOCKERHUB_CREDENTIAL_ID = 'dockerhub_credentials'
+env.DOCKER_REGISTRY = 'https://registry.hub.docker.com'
 /* Github  */
 env.GITHUB_CRDENTIAL_ID = 'github_pvt_key'
 env.GITHUB_REPO = 'cicd-project-python'
@@ -147,6 +148,9 @@ stages {
             steps {
     
                     script {
+
+                      env.VERSION = sh(script: 'echo "0.12.0-$(git rev-parse --short HEAD)" ',returnStdout: true).trim()
+
                        sh '''
                             if ! command -v trivy &> /dev/null
                             then
@@ -157,14 +161,22 @@ stages {
                             fi
                             trivy --version
                         '''
-                        docker.withRegistry("https://registry.hub.docker.com", "${env.DOCKERHUB_CREDENTIAL_ID}") {
-                            def customImage = docker.build("${env.IMAGE}:${env.BUILD_NUMBER}", "--network=host .")
+                          docker.withRegistry(env.DOCKER_REGISTRY,env.DOCKERHUB_CREDENTIAL_ID) {
+                            // def customImage = docker.build("${env.IMAGE}:${env.BUILD_NUMBER}", "--network=host .")
+                            sh """
+                                docker buildx create --use
+                                docker buildx build --load \
+                                                    --cache-to type=registry,ref=${IMAGE}:cache \
+                                                    --cache-from type=registry,ref=${IMAGE}:cache \
+                                                    -t  ${IMAGE}:${BUILD_NUMBER}-${VERSION} \
+                                                     .
+                            """
                             /* Scan image for vulnerabilities */
                             sh "trivy image --exit-code 0 --severity HIGH --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true"
                             sh "trivy image --exit-code 1 --severity CRITICAL --no-progress ${env.IMAGE}:${env.BUILD_NUMBER} || true"
                             /* Push the container to the custom Registry */
-                            customImage.push()
-                        }
+                            /* customImage.push() */
+                        } //docker.withRegistry-END
                         // Create Artifacts which we can use if we want to continue our pipeline for other stages/pipelines
                         sh '''
                              printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${IMAGE}" "${BUILD_NUMBER}" > build.json
