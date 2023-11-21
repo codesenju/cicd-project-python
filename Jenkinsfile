@@ -158,15 +158,14 @@ stages {
                             fi
                             trivy --version
                         '''
-                          docker.withRegistry(env.DOCKER_REGISTRY,env.DOCKERHUB_CREDENTIAL_ID) {
-                            // def customImage = docker.build("${env.IMAGE}:${env.BUILD_NUMBER}", "--network=host .")
-                            // sh 'sleep 99999'
-                            // sh 'echo waiting for docker daemon to be ready...; until docker ps; do sleep 3; done;'
-
+                            
+                            // Authenticate with docker registry
+                            withCredentials([usernamePassword(credentialsId: env.DOCKERHUB_CREDENTIAL_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                                sh "echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAM} --password-stdin ${DOCKER_REGISTRY}"
+                            }
                             sh 'docker buildx create --use --name builder --buildkitd-flags "--allow-insecure-entitlement network.host"'
 
                             sh """
-                                docker login
                                 docker buildx build --load \
                                                     --cache-to type=registry,ref=${IMAGE}:cache \
                                                     --cache-from type=registry,ref=${IMAGE}:cache \
@@ -180,10 +179,6 @@ stages {
 
                             sh "docker push ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}"
 
-                            /* Push the container to the custom Registry */
-                            /* customImage.push() */
-
-                        } //docker.withRegistry-END
 
                         // Create Artifacts which we can use if we want to continue our pipeline for other stages/pipelines
                         sh '''
