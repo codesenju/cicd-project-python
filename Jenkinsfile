@@ -161,7 +161,7 @@ stages {
                             
                             // Authenticate with docker registry
                             withCredentials([usernamePassword(credentialsId: env.DOCKERHUB_CREDENTIAL_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                                sh "echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAM} --password-stdin ${DOCKER_REGISTRY}"
+                                sh "echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin ${DOCKER_REGISTRY}"
                             }
                             sh 'docker buildx create --use --name builder --buildkitd-flags "--allow-insecure-entitlement network.host"'
 
