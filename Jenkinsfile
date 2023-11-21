@@ -163,8 +163,8 @@ stages {
                         '''
                           docker.withRegistry(env.DOCKER_REGISTRY,env.DOCKERHUB_CREDENTIAL_ID) {
                             // def customImage = docker.build("${env.IMAGE}:${env.BUILD_NUMBER}", "--network=host .")
+                            sh 'docker buildx create --use --name builder --buildkitd-flags --allow-insecure-entitlement network.host'
                             sh """
-                                docker buildx create --use --name builder --buildkitd-flags '--allow-insecure-entitlement network.host'
                                 docker buildx build --load \
                                                     --cache-to type=registry,ref=${IMAGE}:cache \
                                                     --cache-from type=registry,ref=${IMAGE}:cache \
