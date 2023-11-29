@@ -216,10 +216,9 @@ stage('Deploy - DEV') {
             // sh "kubectl cluster-info"
                 script {
                     def gitUrl = "git@github.com:${params.GITHUB_USERNAME}/${params.K8S_MANIFESTS_REPO}.git"
-                    def gitCredentialId = "${params.GITHUB_CRDENTIAL_ID}"
                 // Updating k8s repo with non gitSCM method to aviod non stop build triggers
                 // Alternative to second SCM we will clone manually
-                withCredentials([sshUserPrivateKey(credentialsId: gitCredentialId, keyFileVariable: 'SSH_KEY')]) {
+                withCredentials([sshUserPrivateKey(credentialsId: params.GITHUB_CRDENTIAL_ID, keyFileVariable: 'SSH_KEY')]) {
                     sh '''
                           export ENV=dev
                           eval `ssh-agent -s`
