@@ -161,14 +161,12 @@ stages {
                         '''
                             
                           
-                          withCredentials([usernamePassword(credentialsId: params.DOCKERHUB_CREDENTIAL_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                            sh '''
-
-                            # Authenticate with docker registry
-                            echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin ${params.DOCKER_REGISTRY}
+                        withCredentials([usernamePassword(credentialsId: params.DOCKERHUB_CREDENTIAL_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                            sh 'echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin ${params.DOCKER_REGISTRY}'
                        
-                            docker buildx create --use --name builder --buildkitd-flags '--allow-insecure-entitlement network.host'
+                            sh "docker buildx create --use --name builder --buildkitd-flags '--allow-insecure-entitlement network.host'"
 
+                            sh '''
                             docker buildx build --load \
                                                 --cache-to type=registry,ref=${params.DOCKER_REGISTRY}/${params.IMAGE}:cache \
                                                 --cache-from type=registry,ref=${params.DOCKER_REGISTRY}/${params.IMAGE}:cache \
@@ -183,7 +181,7 @@ stages {
 
                           sh 'docker push ${params.DOCKER_REGISTRY}/${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}'
                           
-                          }
+                        }
 
                         // Create Artifacts which we can use if we want to continue our pipeline for other stages/pipelines
                         sh """
