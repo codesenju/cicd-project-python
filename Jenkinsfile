@@ -1,20 +1,19 @@
-env.ENV = 'dev'
-env.IMAGE = 'codesenju/python-test'
-/* Docker */
-env.DOCKERHUB_CREDENTIAL_ID = 'dockerhub_credentials'
-env.DOCKER_REGISTRY = 'docker.io'
-/* Github  */
-env.GITHUB_CRDENTIAL_ID = 'github_pvt_key'
-env.GITHUB_CRDENTIAL_ID2 = 'github_pvt_key2'
-env.GITHUB_REPO = 'cicd-project-python'
-env.GITHUB_USERNAME = 'codesenju'
-env.APP_NAME = 'cicd-project-python'
-env.K8S_MANIFESTS_REPO = 'cicd-project-k8s'
-/* AWS */
-env.CLUSTER_NAME = 'uat'
-env.AWS_REGION = 'us-east-1'
-/* Argocd*/
-env.ARGOCD_CLUSTER_NAME = 'in-cluster'
+parameters {
+    string(name: 'ENV', defaultValue: 'dev', description: '')
+    string(name: 'IMAGE', defaultValue: 'codesenju/python-test', description: '')
+    string(name: 'DOCKERHUB_CREDENTIAL_ID', defaultValue: 'dockerhub_credentials', description: '')
+    string(name: 'DOCKER_REGISTRY', defaultValue: 'docker.io', description: '')
+    string(name: 'GITHUB_CRDENTIAL_ID', defaultValue: 'github_pvt_key', description: '')
+    string(name: 'GITHUB_CRDENTIAL_ID2', defaultValue: 'github_pvt_key2', description: '')
+    string(name: 'GITHUB_REPO', defaultValue: 'cicd-project-python', description: '')
+    string(name: 'GITHUB_USERNAME', defaultValue: 'codesenju', description: '')
+    string(name: 'APP_NAME', defaultValue: 'cicd-project-python', description: '')
+    string(name: 'K8S_MANIFESTS_REPO', defaultValue: 'cicd-project-k8s', description: '')
+    string(name: 'CLUSTER_NAME', defaultValue: 'uat', description: '')
+    string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: '')
+    string(name: 'ARGOCD_CLUSTER_NAME', defaultValue: 'in-cluster', description: '')
+}
+
 pipeline {
     
   triggers {
@@ -23,7 +22,6 @@ pipeline {
  
     // agent {label 'k8s-agent'}
         agent {kubernetes {
-        // inheritFrom 'k8s_agent' 
         yaml '''
 kind: "Pod"
 spec:
