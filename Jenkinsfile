@@ -1,3 +1,4 @@
+pipeline {
 parameters {
     string(name: 'ENV', defaultValue: 'dev', description: '')
     string(name: 'IMAGE', defaultValue: 'codesenju/python-test', description: 'Docker image name')
@@ -12,8 +13,6 @@ parameters {
     string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region')
     string(name: 'ARGOCD_CLUSTER_NAME', defaultValue: 'in-cluster', description: 'Argocd destination cluster name')
 }
-
-pipeline {
     
   triggers {
     githubPush()
