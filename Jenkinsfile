@@ -44,6 +44,9 @@ spec:
       value: "127.0.0.1"
     securityContext: 
       runAsUser: 0
+    volumeMounts:
+    - mountPath: "/var/run/"
+      name: "docker-socket"
   - name: "dind"
     env:
     - name: DOCKER_TLS_CERTDIR
@@ -51,6 +54,12 @@ spec:
     image: "docker:19.03.13-dind"
     securityContext:
       privileged: true  # the Docker daemon can only run in a privileged container
+    volumeMounts:
+    - name: "docker-socket"
+      mountPath: "/var/run"
+  volumes:
+  - name: "docker-socket"
+    emptyDir: {}
     '''
     } }
     //environment {
@@ -173,10 +182,10 @@ stages {
                                                 .
 
                             # Scan image for vulnerabilities - NB! Trivy has rate limiting
-                            # If you would like to scan the image on your host machine, you need to mount docker.sock
+                            # If you would like to scan the image uding trivy on your host machine, you need to mount docker.sock
                             # docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy:0.28.1 python:3.4-alpine
-                            # trivy image --exit-code 0 --severity HIGH --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
-                            # trivy image --exit-code 1 --severity CRITICAL --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
+                            trivy image --exit-code 0 --severity HIGH --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
+                            trivy image --exit-code 1 --severity CRITICAL --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
 
                             docker push ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
                           """
