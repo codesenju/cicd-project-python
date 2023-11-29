@@ -220,13 +220,15 @@ stage('Deploy - DEV') {
                 // Updating k8s repo with non gitSCM method to aviod non stop build triggers
                 // Alternative to second SCM we will clone manually
                 withCredentials([sshUserPrivateKey(credentialsId: gitCredentialId, keyFileVariable: 'SSH_KEY')]) {
-                    sh """
+                    sh '''
                           export ENV=dev
                           eval `ssh-agent -s`
-                          ssh-add \$SSH_KEY
+                          ssh-add $SSH_KEY
                           ssh -o StrictHostKeyChecking=no git@github.com || true
                           export TEMPDIR=$(mktemp -d)
-                          cd \$TEMPDIR
+                          cd $TEMPDIR
+                        '''
+                    sh """
                           git clone git@github.com:${params.GITHUB_USERNAME}/${params.K8S_MANIFESTS_REPO}.git
                           cd ${params.K8S_MANIFESTS_REPO}/${params.APP_NAME}/k8s/${ENV}
                           ls -la
@@ -241,7 +243,7 @@ stage('Deploy - DEV') {
                           git commit -m "Updated ${params.APP_NAME} image to ${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}" || true
                           git status
                           git push origin HEAD:main
-                    """
+                       """
                 }//end-withCredentials
                 //}//end-dir
              
