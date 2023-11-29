@@ -1,16 +1,16 @@
 parameters {
     string(name: 'ENV', defaultValue: 'dev', description: '')
-    string(name: 'IMAGE', defaultValue: 'codesenju/python-test', description: '')
+    string(name: 'IMAGE', defaultValue: 'codesenju/python-test', description: 'Docker image name')
     string(name: 'DOCKERHUB_CREDENTIAL_ID', defaultValue: 'dockerhub_credentials', description: '')
-    string(name: 'DOCKER_REGISTRY', defaultValue: 'docker.io', description: '')
-    string(name: 'GITHUB_CRDENTIAL_ID', defaultValue: 'github_pvt_key', description: '')
-    string(name: 'GITHUB_REPO', defaultValue: 'cicd-project-python', description: '')
-    string(name: 'GITHUB_USERNAME', defaultValue: 'codesenju', description: '')
-    string(name: 'APP_NAME', defaultValue: 'cicd-project-python', description: '')
-    string(name: 'K8S_MANIFESTS_REPO', defaultValue: 'cicd-project-k8s', description: '')
-    string(name: 'CLUSTER_NAME', defaultValue: 'uat', description: '')
-    string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: '')
-    string(name: 'ARGOCD_CLUSTER_NAME', defaultValue: 'in-cluster', description: '')
+    string(name: 'DOCKER_REGISTRY', defaultValue: 'docker.io', description: 'Docker container registry')
+    string(name: 'GITHUB_USERNAME', defaultValue: 'codesenju', description: 'Github username')
+    string(name: 'GITHUB_CRDENTIAL_ID', defaultValue: 'github_pvt_key', description: 'Jenkins github credential id')
+    string(name: 'GITHUB_REPO', defaultValue: 'cicd-project-python', description: 'Repository name')
+    string(name: 'APP_NAME', defaultValue: 'cicd-project-python', description: 'Name of app ( same as GITHUB_REPO )')
+    string(name: 'K8S_MANIFESTS_REPO', defaultValue: 'cicd-project-k8s', description: 'Gitops k8s manifest repository name')
+    string(name: 'CLUSTER_NAME', defaultValue: 'uat', description: 'EKS cluster name')
+    string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region')
+    string(name: 'ARGOCD_CLUSTER_NAME', defaultValue: 'in-cluster', description: 'Argocd destination cluster name')
 }
 
 pipeline {
