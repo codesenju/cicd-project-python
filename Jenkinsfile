@@ -185,9 +185,9 @@ stages {
                         }//end-withCredentials
 
                         // Create Artifacts which we can use if we want to continue our pipeline for other stages/pipelines
-                        sh """
-                             printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${params.APP_NAME}" "${params.DOCKER_REGISTRY}/${params.IMAGE}" "${BUILD_NUMBER}-${GIT_COMMIT_ID}" > build.json
-                        """
+                        sh '''
+                             printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${DOCKER_REGISTRY}/${IMAGE}" "${BUILD_NUMBER}-${GIT_COMMIT_ID}" > build.json
+                        '''
                    }//end-script
             }
         }
