@@ -223,10 +223,10 @@ stage('Deploy - DEV') {
                     sh """
                           export ENV=dev
                           eval `ssh-agent -s`
-                          ssh-add $SSH_KEY
+                          ssh-add \$SSH_KEY
                           ssh -o StrictHostKeyChecking=no git@github.com || true
                           export TEMPDIR=$(mktemp -d)
-                          cd $TEMPDIR
+                          cd \$TEMPDIR
                           git clone git@github.com:${params.GITHUB_USERNAME}/${params.K8S_MANIFESTS_REPO}.git
                           cd ${params.K8S_MANIFESTS_REPO}/${params.APP_NAME}/k8s/${ENV}
                           ls -la
