@@ -200,17 +200,19 @@ stages {
 
 stage('Deploy - DEV') {
     steps { 
-            sh 'echo Install kubectl cli...'
-            sh 'curl -o /usr/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.4/2023-08-16/bin/linux/amd64/kubectl && chmod +x /usr/bin/kubectl'
-            sh 'kubectl version --short --client'
-            sh "echo 'Install Argocd cli & Authenticate with Argocd Server...'"
-            sh 'curl -sLo /usr/bin/argocd https://github.com/argoproj/argo-cd/releases/download/v2.7.2/argocd-linux-amd64 && chmod +x /usr/bin/argocd'
-            sh 'argocd version --client'
-            sh 'echo Install kustomize cli...'
-            sh 'curl -sLo /tmp/kustomize.tar.gz  https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.0.3/kustomize_v5.0.3_linux_amd64.tar.gz'
-            sh 'tar xzvf /tmp/kustomize.tar.gz -C /usr/bin/ && chmod +x /usr/bin/kustomize && rm -rf /tmp/kustomize.tar.gz'
-            sh 'kustomize version'
-            sh 'aws eks update-kubeconfig --region ${params.AWS_REGION} --name ${params.CLUSTER_NAME}'
+            sh '''
+              echo Install kubectl cli...
+              curl -o /usr/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.4/2023-08-16/bin/linux/amd64/kubectl && chmod +x /usr/bin/kubectl
+              kubectl version --short --client
+              echo 'Install Argocd cli & Authenticate with Argocd Server...'
+              curl -sLo /usr/bin/argocd https://github.com/argoproj/argo-cd/releases/download/v2.7.2/argocd-linux-amd64 && chmod +x /usr/bin/argocd
+              argocd version --client
+              echo Install kustomize cli...
+              curl -sLo /tmp/kustomize.tar.gz  https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.0.3/kustomize_v5.0.3_linux_amd64.tar.gz
+              tar xzvf /tmp/kustomize.tar.gz -C /usr/bin/ && chmod +x /usr/bin/kustomize && rm -rf /tmp/kustomize.tar.gz
+              kustomize version
+            '''
+            sh "aws eks update-kubeconfig --region ${params.AWS_REGION} --name ${params.CLUSTER_NAME}"
             // sh "kubectl cluster-info"
                 script {
                     def gitUrl = "git@github.com:${params.GITHUB_USERNAME}/${params.K8S_MANIFESTS_REPO}.git"
@@ -218,15 +220,15 @@ stage('Deploy - DEV') {
                 // Updating k8s repo with non gitSCM method to aviod non stop build triggers
                 // Alternative to second SCM we will clone manually
                 withCredentials([sshUserPrivateKey(credentialsId: gitCredentialId, keyFileVariable: 'SSH_KEY')]) {
-                    sh '''
-                          ENV=dev
+                    sh """
+                          export ENV=dev
                           eval `ssh-agent -s`
                           ssh-add $SSH_KEY
                           ssh -o StrictHostKeyChecking=no git@github.com || true
                           TEMPDIR=$(mktemp -d)
                           cd $TEMPDIR
                           git clone git@github.com:${params.GITHUB_USERNAME}/${params.K8S_MANIFESTS_REPO}.git
-                          cd $K8S_MANIFESTS_REPO/$APP_NAME/k8s/${ENV}
+                          cd ${params.K8S_MANIFESTS_REPO}/${params.APP_NAME}/k8s/${ENV}
                           ls -la
                           git status
                           git remote -v
@@ -239,7 +241,7 @@ stage('Deploy - DEV') {
                           git commit -m "Updated ${params.APP_NAME} image to ${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}" || true
                           git status
                           git push origin HEAD:main
-                    '''
+                    """
                 }//end-withCredentials
                 //}//end-dir
              
@@ -261,22 +263,18 @@ stage('Deploy - DEV') {
                                sh 'cat argocd.yaml'
                                // Assuming repo already added to argocd server
                             // Create argocd app if it doesn't exist already
-                              def status = sh(script: 'argocd app get $APP_NAME', returnStatus: true)
+                              def status = sh(script: "argocd app get ${prams.APP_NAME}", returnStatus: true)
                               if (status != 0) {
                                  sh 'echo "Argocd app doesnt exist, creating app..."'
                                  sh 'cat argocd.yaml | envsubst'
-                                 sh '''
-                                    pwd
-                                    ls -l
-                                    '''
                                  sh 'cat argocd.yaml | envsubst | argocd app create --upsert -f -'
                                } else {
                                   echo 'Argocd app already exists.'
                                }
-                               sh '''
-                                 argocd app get $APP_NAME --refresh
-                                 argocd app wait $APP_NAME
-                                '''
+                               sh """
+                                 argocd app get ${params.APP_NAME} --refresh
+                                 argocd app wait ${params.APP_NAME}
+                                """
                         }//end-withEnv
                     } //end-wrap
                   }//end-withEnv
