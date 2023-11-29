@@ -169,8 +169,8 @@ stages {
                             docker buildx create --use --name builder --buildkitd-flags '--allow-insecure-entitlement network.host'
 
                             docker buildx build --load \
-                                                --cache-to type=registry,ref=${DOCKER_REGISTRY}/${params.IMAGE}:cache \
-                                                --cache-from type=registry,ref=${DOCKER_REGISTRY}/${params.IMAGE}:cache \
+                                                --cache-to type=registry,ref=${DOCKER_REGISTRY}/${IMAGE}:cache \
+                                                --cache-from type=registry,ref=${DOCKER_REGISTRY}/${IMAGE}:cache \
                                                 -t ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
                                                 .
                             
