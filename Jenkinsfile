@@ -73,13 +73,13 @@ stages {
 // stage('Checkout') {
 //     steps {
 //          script {
-//                     def gitUrl = "git@github.com:${GITHUB_USERNAME}/${GITHUB_REPO}.git"
-//                     def gitCredentialId = "${GITHUB_CRDENTIAL_ID}"
+//                     def gitUrl = "git@github.com:${params.GITHUB_USERNAME}/${params.GITHUB_REPO}.git"
+//                     def gitCredentialId = "${params.GITHUB_CRDENTIAL_ID}"
 //                 checkout([
 //                     $class: 'GitSCM',
 //                     branches: [[name: '*/main']],
 //                     doGenerateSubmoduleConfigurations: false,
-//                     extensions: [[$class: 'ScmName', name:"${GITHUB_REPO}"], [$class: 'RelativeTargetDirectory', relativeTargetDir: 'app-directory']],
+//                     extensions: [[$class: 'ScmName', name:"${params.GITHUB_REPO}"], [$class: 'RelativeTargetDirectory', relativeTargetDir: 'app-directory']],
 //                     submoduleCfg: [],
 //                     userRemoteConfigs: [[
 //                         credentialsId: gitCredentialId,
@@ -162,33 +162,33 @@ stages {
                         '''
                             
                           
-                          withCredentials([usernamePassword(credentialsId: env.DOCKERHUB_CREDENTIAL_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                          withCredentials([usernamePassword(credentialsId: params.DOCKERHUB_CREDENTIAL_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                             sh """
 
                             # Authenticate with docker registry
-                            echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin ${DOCKER_REGISTRY}
+                            echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin ${params.DOCKER_REGISTRY}
                        
                             docker buildx create --use --name builder --buildkitd-flags '--allow-insecure-entitlement network.host'
 
                             docker buildx build --load \
-                                                --cache-to type=registry,ref=${DOCKER_REGISTRY}/${IMAGE}:cache \
-                                                --cache-from type=registry,ref=${DOCKER_REGISTRY}/${IMAGE}:cache \
-                                                -t ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
+                                                --cache-to type=registry,ref=${params.DOCKER_REGISTRY}/${params.IMAGE}:cache \
+                                                --cache-from type=registry,ref=${params.DOCKER_REGISTRY}/${params.IMAGE}:cache \
+                                                -t ${params.DOCKER_REGISTRY}/${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
                                                 .
 
                             # Scan image for vulnerabilities - NB! Trivy has rate limiting
                             # If you would like to scan the image uding trivy on your host machine, you need to mount docker.sock
                             # docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy:0.28.1 python:3.4-alpine
-                            trivy image --exit-code 0 --severity HIGH --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
-                            trivy image --exit-code 1 --severity CRITICAL --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
+                            trivy image --exit-code 0 --severity HIGH --no-progress ${params.DOCKER_REGISTRY}/${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
+                            trivy image --exit-code 1 --severity CRITICAL --no-progress ${params.DOCKER_REGISTRY}/${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
 
-                            docker push ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
+                            docker push ${params.DOCKER_REGISTRY}/${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
                           """
                           }
 
                         // Create Artifacts which we can use if we want to continue our pipeline for other stages/pipelines
                         sh '''
-                             printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${DOCKER_REGISTRY}/${IMAGE}" "${BUILD_NUMBER}-${GIT_COMMIT_ID}" > build.json
+                             printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${params.APP_NAME}" "${params.DOCKER_REGISTRY}/${IMAGE}" "${BUILD_NUMBER}-${GIT_COMMIT_ID}" > build.json
                         '''
                    }//end-script
             }
@@ -212,32 +212,33 @@ stage('Deploy - DEV') {
             sh 'curl -sLo /tmp/kustomize.tar.gz  https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.0.3/kustomize_v5.0.3_linux_amd64.tar.gz'
             sh 'tar xzvf /tmp/kustomize.tar.gz -C /usr/bin/ && chmod +x /usr/bin/kustomize && rm -rf /tmp/kustomize.tar.gz'
             sh 'kustomize version'
-            sh 'aws eks update-kubeconfig --region ${AWS_REGION} --name ${CLUSTER_NAME}'
+            sh 'aws eks update-kubeconfig --region ${params.AWS_REGION} --name ${params.CLUSTER_NAME}'
             // sh "kubectl cluster-info"
                 script {
-                    def gitUrl = "git@github.com:${GITHUB_USERNAME}/${K8S_MANIFESTS_REPO}.git"
-                    def gitCredentialId = "${GITHUB_CRDENTIAL_ID}"
+                    def gitUrl = "git@github.com:${params.GITHUB_USERNAME}/${params.K8S_MANIFESTS_REPO}.git"
+                    def gitCredentialId = "${params.GITHUB_CRDENTIAL_ID}"
                 // Updating k8s repo with non gitSCM method to aviod non stop build triggers
                 // Alternative to second SCM we will clone manually
                 withCredentials([sshUserPrivateKey(credentialsId: gitCredentialId, keyFileVariable: 'SSH_KEY')]) {
                     sh '''
+                          ENV=dev
                           eval `ssh-agent -s`
                           ssh-add $SSH_KEY
                           ssh -o StrictHostKeyChecking=no git@github.com || true
                           TEMPDIR=$(mktemp -d)
                           cd $TEMPDIR
-                          git clone git@github.com:${GITHUB_USERNAME}/${K8S_MANIFESTS_REPO}.git
-                          cd $K8S_MANIFESTS_REPO/$APP_NAME/k8s/$ENV
+                          git clone git@github.com:${params.GITHUB_USERNAME}/${params.K8S_MANIFESTS_REPO}.git
+                          cd $K8S_MANIFESTS_REPO/$APP_NAME/k8s/${ENV}
                           ls -la
                           git status
                           git remote -v
                           cat kustomization.yaml | head -n 13
-                          kustomize edit set image KUSTOMIZE=${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
+                          kustomize edit set image KUSTOMIZE=${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
                           cat kustomization.yaml | head -n 13
                           git config --global user.email "devops@jenkins-pipeline.com"
                           git config --global user.name "jenkins-k8s-agent"
                           git add kustomization.yaml
-                          git commit -m "Updated ${APP_NAME} image to ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}" || true
+                          git commit -m "Updated ${params.APP_NAME} image to ${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}" || true
                           git status
                           git push origin HEAD:main
                     '''
