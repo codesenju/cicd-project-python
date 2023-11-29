@@ -110,11 +110,6 @@ stages {
                                 /* Scan for IaC misconfigurations */
                                 sh "trivy fs --exit-code 0 --severity HIGH --no-progress --security-checks vuln,config ./ || true"
                                 sh "trivy fs --exit-code 1 --severity CRITICAL --no-progress --security-checks vuln,config ./ || true"
-                                sh """
-                                  env
-                                  ls -la
-                                  pwd
-                                """
                             }//end-script
                     }
                 } // end IaC
