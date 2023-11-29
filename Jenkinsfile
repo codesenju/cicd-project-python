@@ -38,18 +38,18 @@ spec:
     tty: true
   - name: "jnlp"
     image: "codesenju/jenkins-inbound-agent:k8s"
-    env:
-    - name: DOCKER_HOST # the docker daemon can be accessed on the standard port on localhost
-      value: "127.0.0.1"
+    # env:
+    #   - name: DOCKER_HOST # the docker daemon can be accessed on the standard port on localhost
+    #   value: "127.0.0.1"
     securityContext: 
       runAsUser: 0
     volumeMounts:
     - mountPath: "/var/run/"
       name: "docker-socket"
   - name: "dind"
-    env:
-    - name: DOCKER_TLS_CERTDIR
-      value: ""
+    # env:
+    # - name: DOCKER_TLS_CERTDIR
+    #   value: ""
     image: "docker:19.03.13-dind"
     securityContext:
       privileged: true  # the Docker daemon can only run in a privileged container
