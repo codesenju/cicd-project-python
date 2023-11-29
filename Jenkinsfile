@@ -226,18 +226,18 @@ stage('Deploy - DEV') {
                           ssh -o StrictHostKeyChecking=no git@github.com || true
                           export TEMPDIR=$(mktemp -d)
                           cd $TEMPDIR    
-                          git clone git@github.com:${params.GITHUB_USERNAME}/${params.K8S_MANIFESTS_REPO}.git
-                          cd ${params.K8S_MANIFESTS_REPO}/${params.APP_NAME}/k8s/${ENV}
+                          git clone git@github.com:${GITHUB_USERNAME}/${K8S_MANIFESTS_REPO}.git
+                          cd ${K8S_MANIFESTS_REPO}/${APP_NAME}/k8s/${ENV}
                           ls -la
                           git status
                           git remote -v
                           cat kustomization.yaml | head -n 13
-                          kustomize edit set image KUSTOMIZE=${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
+                          kustomize edit set image KUSTOMIZE=${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
                           cat kustomization.yaml | head -n 13
                           git config --global user.email "devops@jenkins-pipeline.com"
                           git config --global user.name "jenkins-k8s-agent"
                           git add kustomization.yaml
-                          git commit -m "Updated ${params.APP_NAME} image to ${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}" || true
+                          git commit -m "Updated ${APP_NAME} image to ${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}" || true
                           git status
                           git push origin HEAD:main
                        '''
