@@ -163,24 +163,24 @@ stages {
                           
                         withCredentials([usernamePassword(credentialsId: params.DOCKERHUB_CREDENTIAL_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                             
-                            sh """
-                            echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin ${params.DOCKER_REGISTRY}
+                            sh '''
+                            echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin ${DOCKER_REGISTRY}
                         
                             docker buildx create --use --name builder --buildkitd-flags '--allow-insecure-entitlement network.host'
 
                             docker buildx build --load \
-                                                --cache-to type=registry,ref=${params.DOCKER_REGISTRY}/${params.IMAGE}:cache \
-                                                --cache-from type=registry,ref=${params.DOCKER_REGISTRY}/${params.IMAGE}:cache \
-                                                -t ${params.DOCKER_REGISTRY}/${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
+                                                --cache-to type=registry,ref=${DOCKER_REGISTRY}/${params.IMAGE}:cache \
+                                                --cache-from type=registry,ref=${DOCKER_REGISTRY}/${params.IMAGE}:cache \
+                                                -t ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
                                                 .
                             
                             # Scan image for vulnerabilities - NB! Trivy has rate limiting
                             # If you would like to scan the image using trivy on your host machine, you need to mount docker.sock
-                            trivy image --exit-code 0 --severity HIGH --no-progress ${params.DOCKER_REGISTRY}/${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
-                            trivy image --exit-code 1 --severity CRITICAL --no-progress ${params.DOCKER_REGISTRY}/${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
+                            trivy image --exit-code 0 --severity HIGH --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
+                            trivy image --exit-code 1 --severity CRITICAL --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
 
-                            docker push ${params.DOCKER_REGISTRY}/${params.IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
-                            """
+                            docker push ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
+                            '''
                           
                         }//end-withCredentials
 
@@ -212,7 +212,7 @@ stage('Deploy - DEV') {
               tar xzvf /tmp/kustomize.tar.gz -C /usr/bin/ && chmod +x /usr/bin/kustomize && rm -rf /tmp/kustomize.tar.gz
               kustomize version
             '''
-            sh "aws eks update-kubeconfig --region ${params.AWS_REGION} --name ${params.CLUSTER_NAME}"
+            sh 'aws eks update-kubeconfig --region ${AWS_REGION} --name ${CLUSTER_NAME}'
             // sh "kubectl cluster-info"
                 script {
                     def gitUrl = "git@github.com:${params.GITHUB_USERNAME}/${params.K8S_MANIFESTS_REPO}.git"
@@ -262,18 +262,18 @@ stage('Deploy - DEV') {
                                sh 'cat argocd.yaml'
                                // Assuming repo already added to argocd server
                             // Create argocd app if it doesn't exist already
-                              def status = sh(script: "argocd app get ${prams.APP_NAME}", returnStatus: true)
+                              def status = sh(script: 'argocd app get ${APP_NAME}', returnStatus: true)
                               if (status != 0) {
-                                 sh 'echo "Argocd app doesnt exist, creating app..."'
+                                 sh 'echo Argocd app doesnt exist, creating app...'
                                  sh 'cat argocd.yaml | envsubst'
                                  sh 'cat argocd.yaml | envsubst | argocd app create --upsert -f -'
                                } else {
                                   echo 'Argocd app already exists.'
                                }
-                               sh """
-                                 argocd app get ${params.APP_NAME} --refresh
-                                 argocd app wait ${params.APP_NAME}
-                                """
+                               sh '''
+                                 argocd app get ${APP_NAME} --refresh
+                                 argocd app wait ${APP_NAME}
+                                '''
                         }//end-withEnv
                     } //end-wrap
                   }//end-withEnv
