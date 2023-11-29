@@ -4,7 +4,6 @@ parameters {
     string(name: 'DOCKERHUB_CREDENTIAL_ID', defaultValue: 'dockerhub_credentials', description: '')
     string(name: 'DOCKER_REGISTRY', defaultValue: 'docker.io', description: '')
     string(name: 'GITHUB_CRDENTIAL_ID', defaultValue: 'github_pvt_key', description: '')
-    string(name: 'GITHUB_CRDENTIAL_ID2', defaultValue: 'github_pvt_key2', description: '')
     string(name: 'GITHUB_REPO', defaultValue: 'cicd-project-python', description: '')
     string(name: 'GITHUB_USERNAME', defaultValue: 'codesenju', description: '')
     string(name: 'APP_NAME', defaultValue: 'cicd-project-python', description: '')
@@ -213,7 +212,7 @@ stage('Deploy - DEV') {
             // sh "kubectl cluster-info"
                 script {
                     def gitUrl = "git@github.com:${GITHUB_USERNAME}/${K8S_MANIFESTS_REPO}.git"
-                    def gitCredentialId = "${GITHUB_CRDENTIAL_ID2}"
+                    def gitCredentialId = "${GITHUB_CRDENTIAL_ID}"
                 // Updating k8s repo with non gitSCM method to aviod non stop build triggers
                 // Alternative to second SCM we will clone manually
                 withCredentials([sshUserPrivateKey(credentialsId: gitCredentialId, keyFileVariable: 'SSH_KEY')]) {
