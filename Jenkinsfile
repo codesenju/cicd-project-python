@@ -1,14 +1,14 @@
 pipeline {
 parameters {
-    string(name: 'ENV', defaultValue: 'dev', description: '')
-    string(name: 'IMAGE', defaultValue: 'codesenju/python-test', description: 'Docker image name')
+    //string(name: 'ENV', defaultValue: 'dev', description: '')
+    //string(name: 'IMAGE', defaultValue: 'codesenju/python-test', description: 'Docker image name')
     string(name: 'DOCKERHUB_CREDENTIAL_ID', defaultValue: 'dockerhub_credentials', description: '')
     string(name: 'DOCKER_REGISTRY', defaultValue: 'docker.io', description: 'Docker container registry')
     string(name: 'GITHUB_USERNAME', defaultValue: 'codesenju', description: 'Github username')
     string(name: 'GITHUB_CRDENTIAL_ID', defaultValue: 'github_pvt_key', description: 'Jenkins github credential id')
-    string(name: 'GITHUB_REPO', defaultValue: 'cicd-project-python', description: 'Repository name')
-    string(name: 'APP_NAME', defaultValue: 'cicd-project-python', description: 'Name of app ( same as GITHUB_REPO )')
-    string(name: 'K8S_MANIFESTS_REPO', defaultValue: 'cicd-project-k8s', description: 'Gitops k8s manifest repository name')
+    //string(name: 'GITHUB_REPO', defaultValue: 'cicd-project-python', description: 'Repository name')
+    //string(name: 'APP_NAME', defaultValue: 'cicd-project-python', description: 'Name of app ( same as GITHUB_REPO )')
+    //string(name: 'K8S_MANIFESTS_REPO', defaultValue: 'cicd-project-k8s', description: 'Gitops k8s manifest repository name')
     string(name: 'CLUSTER_NAME', defaultValue: 'uat', description: 'EKS cluster name')
     string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region')
     string(name: 'ARGOCD_CLUSTER_NAME', defaultValue: 'in-cluster', description: 'Argocd destination cluster name')
@@ -112,8 +112,6 @@ stages {
                     } else {
                         error "Unsupported language: ${language}"
                     }
-                    sh 'printenv'
-
                     // Convert properties to environment variables
                     def envVars = props.collect { key, value -> "${key}=${value}" }
                     withEnv(envVars) {
@@ -234,50 +232,50 @@ stages {
 
         stage('Build, Scan and Push') {
             steps {
-    
                     script {
-
-                      env.GIT_COMMIT_ID = sh(script: 'git rev-parse --short HEAD',returnStdout: true).trim()
-
-                       sh '''
-                            if ! command -v trivy &> /dev/null
-                            then
-                                echo "Trivy is not installed. Installing now."
-                                curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.22.0
-                            else
-                                echo "Trivy is already installed."
-                            fi
-                            trivy --version
-                        '''
+                      withEnv(envVars) {
+                        env.GIT_COMMIT_ID = sh(script: 'git rev-parse --short HEAD',returnStdout: true).trim()
+  
+                         sh '''
+                              if ! command -v trivy &> /dev/null
+                              then
+                                  echo "Trivy is not installed. Installing now."
+                                  curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.22.0
+                              else
+                                  echo "Trivy is already installed."
+                              fi
+                              trivy --version
+                          '''
+                              
                             
+                          withCredentials([usernamePassword(credentialsId: params.DOCKERHUB_CREDENTIAL_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                              
+                              sh '''
+                              echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin ${DOCKER_REGISTRY}
                           
-                        withCredentials([usernamePassword(credentialsId: params.DOCKERHUB_CREDENTIAL_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                              docker buildx create --use --name builder --buildkitd-flags '--allow-insecure-entitlement network.host'
+  
+                              docker buildx build --load \
+                                                  --cache-to type=registry,ref=${DOCKER_REGISTRY}/${IMAGE}:cache \
+                                                  --cache-from type=registry,ref=${DOCKER_REGISTRY}/${IMAGE}:cache \
+                                                  -t ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
+                                                  .
+                              
+                              # Scan image for vulnerabilities - NB! Trivy has rate limiting
+                              # If you would like to scan the image using trivy on your host machine, you need to mount docker.sock
+                              trivy image --exit-code 0 --severity HIGH --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
+                              trivy image --exit-code 1 --severity CRITICAL --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
+  
+                              docker push ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
+                              '''
                             
-                            sh '''
-                            echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin ${DOCKER_REGISTRY}
-                        
-                            docker buildx create --use --name builder --buildkitd-flags '--allow-insecure-entitlement network.host'
-
-                            docker buildx build --load \
-                                                --cache-to type=registry,ref=${DOCKER_REGISTRY}/${IMAGE}:cache \
-                                                --cache-from type=registry,ref=${DOCKER_REGISTRY}/${IMAGE}:cache \
-                                                -t ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
-                                                .
-                            
-                            # Scan image for vulnerabilities - NB! Trivy has rate limiting
-                            # If you would like to scan the image using trivy on your host machine, you need to mount docker.sock
-                            trivy image --exit-code 0 --severity HIGH --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
-                            trivy image --exit-code 1 --severity CRITICAL --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
-
-                            docker push ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
-                            '''
-                          
-                        }//end-withCredentials
-
-                        // Create Artifacts which we can use if we want to continue our pipeline for other stages/pipelines
-                        sh '''
-                             printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${DOCKER_REGISTRY}/${IMAGE}" "${BUILD_NUMBER}-${GIT_COMMIT_ID}" > build.json
-                        '''
+                          }//end-withCredentials
+  
+                          // Create Artifacts which we can use if we want to continue our pipeline for other stages/pipelines
+                          sh '''
+                               printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${DOCKER_REGISTRY}/${IMAGE}" "${BUILD_NUMBER}-${GIT_COMMIT_ID}" > build.json
+                          '''
+                      }//withEnv-END
                    }//end-script
             }
         }
@@ -290,6 +288,8 @@ stages {
 
 stage('Deploy - DEV') {
     steps { 
+        script {
+           withEnv(envVars) {
             sh '''
               echo Install kubectl cli...
               curl -o /usr/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.4/2023-08-16/bin/linux/amd64/kubectl && chmod +x /usr/bin/kubectl
@@ -304,7 +304,7 @@ stage('Deploy - DEV') {
             '''
             sh 'aws eks update-kubeconfig --region ${AWS_REGION} --name ${CLUSTER_NAME}'
             // sh "kubectl cluster-info"
-                script {
+              
                     def gitUrl = "git@github.com:${params.GITHUB_USERNAME}/${params.K8S_MANIFESTS_REPO}.git"
                 // Updating k8s repo with non gitSCM method to aviod non stop build triggers
                 // Alternative to second SCM we will clone manually
@@ -367,7 +367,10 @@ stage('Deploy - DEV') {
                         }//end-withEnv
                     } //end-wrap
                   }//end-withEnv
+
              }//end-wrap
+
+         } //withEnv(envVars)-END
        }//end-script
     }//end-steps
 }//end-stage-deploy
