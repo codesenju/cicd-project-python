@@ -150,13 +150,13 @@ stages {
                                       '''
                                     }
                                     break
-                                 case: 'Java':
+                                 case 'Java':
 
                                     echo 'Running vulnerability checks for java'
                                     break
                             }//switch-END
 
-                            } //script-end
+                        } //script-end
                     }//steps-end
                 } // end Unit Test
             }//parallel-end
