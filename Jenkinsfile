@@ -112,6 +112,13 @@ stages {
                     } else {
                         error "Unsupported language: ${language}"
                     }
+                    sh 'printenv'
+
+                    // Convert properties to environment variables
+                    def envVars = props.collect { key, value -> "${key}=${value}" }
+                    withEnv(envVars) {
+                       sh 'env'
+                    }
                 }
             }
         }
