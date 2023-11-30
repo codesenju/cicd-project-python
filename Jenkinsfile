@@ -89,12 +89,23 @@ stages {
 //        }
 //     }
 // } 
-        stage('Read Properties') {
+        stage('Read properties') {
             steps {
                 script {
-                    // Assuming the properties file is named 'config.properties'
+                    // Read properties file
                     def props = readProperties file: 'config.properties'
-                    env.LANGUAGE = props['LANGUAGE']
+
+                    // Get the language property
+                    def language = props['LANGUAGE']
+
+                    // Send a message based on the language property
+                    if (language == 'Python') {
+                        echo "Running pipeline for Python application."
+                    } else if (language == 'Java') {
+                        echo "Running pipeline for Java application."
+                    } else {
+                        error "Unsupported language: ${language}"
+                    }
                 }
             }
         }
