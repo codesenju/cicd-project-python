@@ -12,7 +12,7 @@ parameters {
     string(name: 'CLUSTER_NAME', defaultValue: 'uat', description: 'EKS cluster name')
     string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region')
     string(name: 'ARGOCD_CLUSTER_NAME', defaultValue: 'in-cluster', description: 'Argocd destination cluster name')
-    choice(name: 'LANGUAGE',choices: ['Python', 'Java'],description: 'Select the language of the application to build')
+    // choice(name: 'LANGUAGE',choices: ['Python', 'Java'],description: 'Select the language of the application to build')
 }
 
   triggers {
@@ -89,7 +89,15 @@ stages {
 //        }
 //     }
 // } 
-
+        stage('Read Properties') {
+            steps {
+                script {
+                    // Assuming the properties file is named 'config.properties'
+                    def props = readProperties file: 'config.properties'
+                    env.LANGUAGE = props['LANGUAGE']
+                }
+            }
+        }
 
         stage('Parallel Tests') {
             parallel {
@@ -117,7 +125,7 @@ stages {
                     steps {
                             script {
 
-                              if (params.LANGUAGE == 'Python') {
+                              if (env.LANGUAGE == 'Python') {
 
                                   container('python'){
                                   sh '''
@@ -126,7 +134,7 @@ stages {
                                    '''
                                   }
 
-                              } else if (params.LANGUAGE == 'Java') {
+                              } else if (env.LANGUAGE == 'Java') {
 
                                 echo 'Building Python application...'
 
@@ -139,7 +147,7 @@ stages {
                     steps {
                         script {
 
-                            switch(params.LANGUAGE) {
+                            switch(env.LANGUAGE) {
                                 case 'Python':
                                 
                                     container('python'){
