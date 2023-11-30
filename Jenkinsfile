@@ -93,13 +93,13 @@ stages {
 //                     ]]
 //                 ])
 //        }
-//     }
+//     }s
 // } 
         stage('Read properties') {
             steps {
                 script {
                     // Read properties file
-                    def props = readProperties file: 'config.properties'
+                    def props = readProperties file: 'jenkins.properties'
 
                     // Convert properties to environment variables
                     props.each { key, value ->
@@ -120,6 +120,7 @@ stages {
         }
 
         stage('Parallel Tests') {
+            failFast true // Force your parallel stages to all be aborted when any one of them fails.
             parallel {
                 stage('Quality Tests') {
                     steps {
