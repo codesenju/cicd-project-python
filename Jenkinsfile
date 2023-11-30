@@ -12,6 +12,7 @@ parameters {
     string(name: 'CLUSTER_NAME', defaultValue: 'uat', description: 'EKS cluster name')
     string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region')
     string(name: 'ARGOCD_CLUSTER_NAME', defaultValue: 'in-cluster', description: 'Argocd destination cluster name')
+    string(name: 'APP_SONAR_TOKEN', defaultValue: 'petclinic_sonar_token', description: 'SonarQube application token')
     // choice(name: 'LANGUAGE',choices: ['Python', 'Java'],description: 'Select the language of the application to build')
 }
 
@@ -144,7 +145,7 @@ stages {
                                 case 'Java':
 
                                     container('maven'){
-                                        withCredentials([string(credentialsId: "${env.PETCLINIC_SONAR_TOKEN}", variable: 'TOKEN')]) {
+                                        withCredentials([string(credentialsId: params.APP_SONAR_TOKEN, variable: 'TOKEN')]) {
                                             sh '''
                                               mvn -DskipTests verify sonar:sonar \
                                               -Dsonar.projectKey=petclinic \
@@ -212,7 +213,7 @@ stages {
                                          mvn org.owasp:dependency-check-maven:check
                                          '''
                                     }
-                                    
+
                                     break
                                     
                             }//switch-END
