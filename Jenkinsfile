@@ -12,6 +12,7 @@ parameters {
     string(name: 'CLUSTER_NAME', defaultValue: 'uat', description: 'EKS cluster name')
     string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region')
     string(name: 'ARGOCD_CLUSTER_NAME', defaultValue: 'in-cluster', description: 'Argocd destination cluster name')
+    choice(name: 'LANGUAGE',choices: ['Python', 'Java'],description: 'Select the language of the application to build')
 }
 
   triggers {
@@ -114,32 +115,52 @@ stages {
                 } // end IaC
                 stage('Unit Test') {
                     steps {
-
                             script {
-                               container('python'){
-                               sh '''
-                                pip install -r requirements.txt
-                                pytest
-                                '''
-                               }
-                            }
+
+                              if (params.LANGUAGE == 'Python') {
+
+                                  container('python'){
+                                  sh '''
+                                   pip install -r requirements.txt
+                                   pytest
+                                   '''
+                                  }
+
+                              } else if (params.LANGUAGE == 'Java') {
+
+                                echo 'Building Python application...'
+
+                              }
+
+                            }//script-end
                     }
                 } // end Unit Test
                 stage('Vulnerability Checks') {
                     steps {
-                            script {
-                              container('python'){
-                               sh '''
-                                pip install -r requirements.txt
-                                bandit web.py
-                                safety check -r requirements.txt
-                                '''
-                               }
-                            }
-                    }
+                        script {
+
+                            switch(params.LANGUAGE) {
+                                case 'Python':
+                                
+                                    container('Python'){
+                                     sh '''
+                                      pip install -r requirements.txt
+                                      bandit web.py
+                                      safety check -r requirements.txt
+                                      '''
+                                    }
+                                    break
+                                 case: 'Java':
+
+                                    echo 'Running vulnerability checks for java'
+                                    break
+                            }//switch-END
+
+                            } //script-end
+                    }//steps-end
                 } // end Unit Test
-            }
-        } // end Test
+            }//parallel-end
+        } //Parallel Test END
         
 
         stage('Build, Scan and Push') {
