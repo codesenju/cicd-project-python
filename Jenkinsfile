@@ -142,7 +142,7 @@ stages {
                             switch(params.LANGUAGE) {
                                 case 'Python':
                                 
-                                    container('Python'){
+                                    container('python'){
                                      sh '''
                                       pip install -r requirements.txt
                                       bandit web.py
