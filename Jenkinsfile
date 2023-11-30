@@ -108,9 +108,9 @@ stages {
 
                     // Send a message based on the language property
                     if (env.LANGUAGE == 'Python') {
-                        echo "Running pipeline for ${env.LANGUAGE}."
+                        echo "Detected ${env.LANGUAGE} App"
                     } else if (env.LANGUAGE == 'Java') {
-                        echo "Running pipeline for ${env.LANGUAGE}."
+                        echo "Detected ${env.LANGUAGE} App"
                     } else {
                         error "Unsupported language: ${env.LANGUAGE}"
                     }
