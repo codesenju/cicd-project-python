@@ -101,22 +101,20 @@ stages {
                     // Read properties file
                     def props = readProperties file: 'config.properties'
 
-                    // Get the language property
-                    def language = props['LANGUAGE']
+                    // Convert properties to environment variables
+                    props.each { key, value ->
+                        env."${key}" = "${value}"
+                    }
 
                     // Send a message based on the language property
-                    if (language == 'Python') {
+                    if (env.LANGUAGE == 'Python') {
                         echo "Running pipeline for Python application."
-                    } else if (language == 'Java') {
+                    } else if (env.LANGUAGE == 'Java') {
                         echo "Running pipeline for Java application."
                     } else {
-                        error "Unsupported language: ${language}"
+                        error "Unsupported language: ${env.LANGUAGE}"
                     }
-                    // Convert properties to environment variables
-                    def envVars = props.collect { key, value -> "${key}=${value}" }
-                    withEnv(envVars) {
-                       sh 'env'
-                    }
+               
                 }
             }
         }
@@ -233,7 +231,7 @@ stages {
         stage('Build, Scan and Push') {
             steps {
                     script {
-                      withEnv(envVars) {
+
                         env.GIT_COMMIT_ID = sh(script: 'git rev-parse --short HEAD',returnStdout: true).trim()
   
                          sh '''
@@ -275,7 +273,7 @@ stages {
                           sh '''
                                printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${DOCKER_REGISTRY}/${IMAGE}" "${BUILD_NUMBER}-${GIT_COMMIT_ID}" > build.json
                           '''
-                      }//withEnv-END
+           
                    }//end-script
             }
         }
@@ -289,7 +287,7 @@ stages {
 stage('Deploy - DEV') {
     steps { 
         script {
-           withEnv(envVars) {
+          
             sh '''
               echo Install kubectl cli...
               curl -o /usr/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.4/2023-08-16/bin/linux/amd64/kubectl && chmod +x /usr/bin/kubectl
@@ -370,7 +368,6 @@ stage('Deploy - DEV') {
 
              }//end-wrap
 
-         } //withEnv(envVars)-END
        }//end-script
     }//end-steps
 }//end-stage-deploy
