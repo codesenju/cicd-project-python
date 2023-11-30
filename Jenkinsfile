@@ -37,6 +37,11 @@ spec:
     command:
     - cat
     tty: true
+  - name: "maven"
+    image: "maven:3.9.4-eclipse-temurin-21-alpine"
+    command:
+    - cat
+    tty: true
   - name: "jnlp"
     image: "codesenju/jenkins-inbound-agent:k8s"
     # env:
@@ -112,27 +117,51 @@ stages {
 
         stage('Parallel Tests') {
             parallel {
-                stage('IaC') {
+                stage('Quality Tests') {
                     steps {
 
-                            script {
-                                sh '''
-                                    if ! command -v trivy &> /dev/null
-                                    then
-                                        echo "Trivy is not installed. Installing now."
-                                        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.22.0
-                                    else
-                                        echo "Trivy is already installed."
-                                    fi
-                                    trivy --version
-                                '''
-                                /* Scan for IaC misconfigurations */
-                                sh "trivy fs --exit-code 0 --severity HIGH --no-progress --security-checks vuln,config ./ || true"
-                                sh "trivy fs --exit-code 1 --severity CRITICAL --no-progress --security-checks vuln,config ./ || true"
-                            }//end-script
+                        script {
+ 
+                            switch(env.LANGUAGE) {
+
+                                case 'Python':
+
+                                    sh '''
+                                        if ! command -v trivy &> /dev/null
+                                        then
+                                            echo "Trivy is not installed. Installing now."
+                                            curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.22.0
+                                        else
+                                            echo "Trivy is already installed."
+                                        fi
+                                        trivy --version
+                                    '''
+                                    /* Scan for IaC misconfigurations */
+                                    sh "trivy fs --exit-code 0 --severity HIGH --no-progress --security-checks vuln,config ./ || true"
+                                    sh "trivy fs --exit-code 1 --severity CRITICAL --no-progress --security-checks vuln,config ./ || true"
+
+                                    break
+                                case 'Java':
+
+                                    container('maven'){
+                                        withCredentials([string(credentialsId: "${env.PETCLINIC_SONAR_TOKEN}", variable: 'TOKEN')]) {
+                                            sh '''
+                                              mvn -DskipTests verify sonar:sonar \
+                                              -Dsonar.projectKey=petclinic \
+                                              -Dsonar.host.url=https://sonarqube.lmasu.co.za \
+                                              -Dsonar.login=${TOKEN} \
+                                              -Dsonar.qualitygate.wait=true
+                                               '''
+                                        }
+                                    }
+                                    
+                                    break
+
+                             }//switch-END
+                     }//end-script
                     }
                 } // end IaC
-                stage('Unit Test') {
+                stage('Unit Tests') {
                     steps {
                             script {
 
@@ -147,18 +176,23 @@ stages {
 
                               } else if (env.LANGUAGE == 'Java') {
 
-                                echo 'Building Python application...'
+                                  container('maven'){
+                                      sh '''
+                                       mvn test
+                                       '''
+                                      }
 
                               }
 
                             }//script-end
                     }
                 } // end Unit Test
-                stage('Vulnerability Checks') {
+                stage('Security Tests') {
                     steps {
                         script {
 
                             switch(env.LANGUAGE) {
+
                                 case 'Python':
                                 
                                     container('python'){
@@ -168,16 +202,24 @@ stages {
                                       safety check -r requirements.txt
                                       '''
                                     }
+
                                     break
+
                                  case 'Java':
 
-                                    echo 'Running vulnerability checks for java'
+                                    container('maven'){
+                                        sh '''
+                                         mvn org.owasp:dependency-check-maven:check
+                                         '''
+                                    }
+                                    
                                     break
+                                    
                             }//switch-END
 
                         } //script-end
                     }//steps-end
-                } // end Unit Test
+                } // end Security Tests
             }//parallel-end
         } //Parallel Test END
         
