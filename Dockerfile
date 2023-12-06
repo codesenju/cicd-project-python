@@ -1,4 +1,5 @@
-FROM  python:slim-bookworm
+# FROM  python:slim-bookworm
+FROM python:3.11.7-slim-bookworm
 WORKDIR /app
 
 COPY ./web.py  .
