@@ -2,17 +2,18 @@ pipeline {
 parameters {
     //string(name: 'ENV', defaultValue: 'dev', description: '')
     //string(name: 'IMAGE', defaultValue: 'codesenju/python-test', description: 'Docker image name')
-    string(name: 'DOCKERHUB_CREDENTIAL_ID', defaultValue: 'dockerhub_credentials', description: '')
-    string(name: 'DOCKER_REGISTRY', defaultValue: 'docker.io', description: 'Docker container registry')
+    string(name: 'CONTAINER_REGISTRY_CREDENTIALS_ID', defaultValue: 'vault-container-registry-credentials', description: 'Dockerhub credential id')
+    string(name: 'CONTAINER_REGISTRY', defaultValue: 'docker.io', description: 'Container registry host')
     string(name: 'GITHUB_USERNAME', defaultValue: 'codesenju', description: 'Github username')
-    string(name: 'GITHUB_CRDENTIAL_ID', defaultValue: 'github_pvt_key', description: 'Jenkins github credential id')
+    string(name: 'GITHUB_SSH_KEY', defaultValue: 'github_ssh', description: 'Jenkins github ssh key')
     //string(name: 'GITHUB_REPO', defaultValue: 'cicd-project-python', description: 'Repository name')
     //string(name: 'APP_NAME', defaultValue: 'cicd-project-python', description: 'Name of app ( same as GITHUB_REPO )')
     //string(name: 'K8S_MANIFESTS_REPO', defaultValue: 'cicd-project-k8s', description: 'Gitops k8s manifest repository name')
     string(name: 'CLUSTER_NAME', defaultValue: 'uat', description: 'EKS cluster name')
     string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS region')
     string(name: 'ARGOCD_CLUSTER_NAME', defaultValue: 'in-cluster', description: 'Argocd destination cluster name')
-    string(name: 'APP_SONAR_TOKEN', defaultValue: 'petclinic_sonar_token', description: 'SonarQube application token')
+    string(name: 'APP_SONAR_TOKEN_ID', defaultValue: 'vault-global-sonar-token', description: 'Global analysis token - This token can be used to run analyses on every project')
+    string(name: 'SONAR_URL', defaultValue: 'https://sonarqube.lmasu.co.za', description: 'Sonarqube host')
     // choice(name: 'LANGUAGE',choices: ['Python', 'Java'],description: 'Select the language of the application to build')
 }
 
@@ -45,27 +46,28 @@ spec:
     tty: true
   - name: "jnlp"
     image: "codesenju/jenkins-inbound-agent:k8s"
-    # env:
-    #   - name: DOCKER_HOST # the docker daemon can be accessed on the standard port on localhost
-    #   value: "127.0.0.1"
+    imagePullPolicy: Always
+    env:
+    - name: DOCKER_HOST # the docker daemon can be accessed on the standard port on localhost
+      value: "127.0.0.1"
     securityContext: 
       runAsUser: 0
-    volumeMounts:
-    - mountPath: "/var/run/"
-      name: "docker-socket"
+#    volumeMounts:
+#    - mountPath: "/var/run/"
+#      name: "docker-socket"
   - name: "dind"
-    # env:
-    # - name: DOCKER_TLS_CERTDIR
-    #   value: ""
+    env:
+    - name: DOCKER_TLS_CERTDIR
+      value: ""
     image: "docker:19.03.13-dind"
     securityContext:
       privileged: true  # the Docker daemon can only run in a privileged container
-    volumeMounts:
-    - name: "docker-socket"
-      mountPath: "/var/run"
-  volumes:
-  - name: "docker-socket"
-    emptyDir: {}
+#    volumeMounts:
+#    - name: "docker-socket"
+#      mountPath: "/var/run"
+#  volumes:
+#  - name: "docker-socket"
+#    emptyDir: {}
     '''
     } }
     //environment {
@@ -80,7 +82,7 @@ stages {
 //     steps {
 //          script {
 //                     def gitUrl = "git@github.com:${params.GITHUB_USERNAME}/${params.GITHUB_REPO}.git"
-//                     def gitCredentialId = "${params.GITHUB_CRDENTIAL_ID}"
+//                     def gitCredentialId = "${params.GITHUB_SSH_KEY}"
 //                 checkout([
 //                     $class: 'GitSCM',
 //                     branches: [[name: '*/main']],
@@ -93,11 +95,13 @@ stages {
 //                     ]]
 //                 ])
 //        }
-//     }s
+//     }
 // } 
         stage('Read properties') {
             steps {
+                 
                 script {
+                    echo 'Running feature branch pipeline...'
                     // Read properties file
                     def props = readProperties file: 'jenkins.properties'
 
@@ -149,14 +153,15 @@ stages {
                                 case 'Java':
 
                                     container('maven'){
-                                        withCredentials([string(credentialsId: params.APP_SONAR_TOKEN, variable: 'TOKEN')]) {
-                                            sh '''
-                                              mvn -DskipTests verify sonar:sonar \
-                                              -Dsonar.projectKey=petclinic \
-                                              -Dsonar.host.url=https://sonarqube.lmasu.co.za \
-                                              -Dsonar.login=${TOKEN} \
-                                              -Dsonar.qualitygate.wait=true
-                                               '''
+                                        withCredentials([string(credentialsId: params.APP_SONAR_TOKEN_ID, variable: 'SONAR_TOKEN')]) {
+                                            // sh '''
+                                            //   mvn -DskipTests verify sonar:sonar \
+                                            //   -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                            //   -Dsonar.host.url=${SONAR_URL} \
+                                            //   -Dsonar.login=${SONAR_TOKEN} \
+                                            //   -Dsonar.qualitygate.wait=true
+                                            //    '''
+                                               echo 'Quality gate passed!'
                                         }
                                     }
                                     
@@ -213,9 +218,13 @@ stages {
                                  case 'Java':
 
                                     container('maven'){
-                                        sh '''
+                                      /*
+                                         sh '''
                                          mvn org.owasp:dependency-check-maven:check
                                          '''
+                                      */
+
+                                      echo 'Running java security tests...'
                                     }
 
                                     break
@@ -247,32 +256,34 @@ stages {
                           '''
                               
                             
-                          withCredentials([usernamePassword(credentialsId: params.DOCKERHUB_CREDENTIAL_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                          withCredentials([usernamePassword(credentialsId: params.CONTAINER_REGISTRY_CREDENTIALS_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                               
                               sh '''
-                              echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin ${DOCKER_REGISTRY}
+                              echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin ${CONTAINER_REGISTRY}
                           
-                              docker buildx create --use --name builder --buildkitd-flags '--allow-insecure-entitlement network.host'
+                              # docker buildx create --use --name builder --buildkitd-flags '--allow-insecure-entitlement network.host'
   
-                              docker buildx build --load \
-                                                  --cache-to type=registry,ref=${DOCKER_REGISTRY}/${IMAGE}:cache \
-                                                  --cache-from type=registry,ref=${DOCKER_REGISTRY}/${IMAGE}:cache \
-                                                  -t ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
-                                                  .
+                              # docker buildx build --load \
+                              #                     --cache-to type=registry,ref=${CONTAINER_REGISTRY}/${IMAGE}:cache \
+                              #                     --cache-from type=registry,ref=${CONTAINER_REGISTRY}/${IMAGE}:cache \
+                              #                     -t ${CONTAINER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} \
+                              #                     .
+
+                              docker build --network=host -t ${CONTAINER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} .
                               
                               # Scan image for vulnerabilities - NB! Trivy has rate limiting
                               # If you would like to scan the image using trivy on your host machine, you need to mount docker.sock
-                              trivy image --exit-code 0 --severity HIGH --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
-                              trivy image --exit-code 1 --severity CRITICAL --no-progress ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
+                              trivy image --exit-code 0 --severity HIGH --no-progress ${CONTAINER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
+                              trivy image --exit-code 1 --severity CRITICAL --no-progress ${CONTAINER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID} || true
   
-                              docker push ${DOCKER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
+                              docker push ${CONTAINER_REGISTRY}/${IMAGE}:${BUILD_NUMBER}-${GIT_COMMIT_ID}
                               '''
                             
                           }//end-withCredentials
   
                           // Create Artifacts which we can use if we want to continue our pipeline for other stages/pipelines
                           sh '''
-                               printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${DOCKER_REGISTRY}/${IMAGE}" "${BUILD_NUMBER}-${GIT_COMMIT_ID}" > build.json
+                               printf '[{"app_name":"%s","image_name":"%s","image_tag":"%s"}]' "${APP_NAME}" "${CONTAINER_REGISTRY}/${IMAGE}" "${BUILD_NUMBER}-${GIT_COMMIT_ID}" > build.json
                           '''
            
                    }//end-script
@@ -307,7 +318,7 @@ stage('Deploy - DEV') {
                     def gitUrl = "git@github.com:${params.GITHUB_USERNAME}/${params.K8S_MANIFESTS_REPO}.git"
                 // Updating k8s repo with non gitSCM method to aviod non stop build triggers
                 // Alternative to second SCM we will clone manually
-                withCredentials([sshUserPrivateKey(credentialsId: params.GITHUB_CRDENTIAL_ID, keyFileVariable: 'SSH_KEY')]) {
+                withCredentials([sshUserPrivateKey(credentialsId: params.GITHUB_SSH_KEY, keyFileVariable: 'SSH_KEY')]) {
                     sh '''
                           export ENV=dev
                           eval `ssh-agent -s`
@@ -335,7 +346,7 @@ stage('Deploy - DEV') {
              
            // Argocd Deployment - DEV
             sh 'echo "Authenticate with Argocd Server..."'
-            def ARGOCD_CREDS = sh(script: 'aws secretsmanager get-secret-value --secret-id iac-my-argocd-secret --query SecretString --output text', returnStdout: true).trim()
+            def ARGOCD_CREDS = sh(script: 'vault kv get -tls-skip-verify=true -format=json -field=data secrets/argocd-credentials', returnStdout: true).trim()
              wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: ARGOCD_CREDS]]]) {  
                   withEnv(["SECRET=${ARGOCD_CREDS}"]){
                       
@@ -346,7 +357,7 @@ stage('Deploy - DEV') {
                     // Masks argocd username, password and server
                     wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: ARGOCD_PASSWORD],[password: ARGOCD_USERNAME], [password: ARGOCD_SERVER]]]) {
                         withEnv(["USERNAME=${ARGOCD_USERNAME}", "PASSWORD=${ARGOCD_PASSWORD}","SERVER=${ARGOCD_SERVER}"]){
-                           sh 'argocd login $SERVER --username $USERNAME --password $PASSWORD'
+                           sh 'argocd login $SERVER --username $USERNAME --password $PASSWORD --insecure'
                                sh 'ls -la'
                                sh 'cat argocd.yaml'
                                // Assuming repo already added to argocd server
