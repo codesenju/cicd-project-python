@@ -6,9 +6,9 @@ COPY ./web.py  .
 COPY requirements.txt .
 
 # Install required libraries
-RUN apt-get update --no-install-recommends && \
-    apt-get install --no-install-recommends -y gcc && \
-    python -m pip install --no-cache-dir -r requirements.txt
+# RUN apt-get update --no-install-recommends && \
+#     apt-get install --no-install-recommends -y gcc && \
+RUN   python -m pip install --no-cache-dir -r requirements.txt
 
 # Change working directory ownership
 RUN chown nobody:nogroup /app -R
