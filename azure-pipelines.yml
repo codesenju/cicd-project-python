@@ -1,12 +1,8 @@
 trigger:
-- main
+- master
 
 pool:
   vmImage: 'ubuntu-latest'
 
-jobs:
-- job: HelloWorld
-  displayName: 'Hello, World Job'
-  steps:
-  - script: echo Hello, World
-    displayName: 'Run a one-line script'
+steps:
+- script: echo Hello, DevOps!
