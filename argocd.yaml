@@ -12,7 +12,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: git@github.com:${GITHUB_USERNAME}/${K8S_MANIFESTS_REPO}.git
+    repoURL: https://github.com/${GITHUB_USERNAME}/${K8S_MANIFESTS_REPO}.git
     targetRevision: main
     path: ${APP_NAME}/k8s/${ENV}
   destination:
